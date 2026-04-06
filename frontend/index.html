@@ -1,1751 +1,3524 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BREACH INTEL — Digital Identity Risk Score</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-/* ===== CSS VARIABLES ===== */
-/* ===== ARIA CHAT WIDGET ===== */
-#ariaBtn {
-  position: fixed; bottom: 28px; right: 28px;
-  width: 56px; height: 56px;
-  background: var(--accent-cyan);
-  border: none; cursor: pointer;
-  display: grid; place-items: center;
-  font-size: 22px;
-  box-shadow: 0 0 24px rgba(0,212,255,0.5);
-  z-index: 500;
-  clip-path: polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px);
-  transition: all 0.2s;
-}
-#ariaBtn:hover { background: #00eeff; box-shadow: 0 0 36px rgba(0,212,255,0.7); }
-#ariaBtn.has-notify::after {
-  content: '';
-  position: absolute; top: 6px; right: 6px;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--accent-red);
-  box-shadow: 0 0 6px var(--accent-red);
-}
- 
-#ariaPanel {
-  display: none;
-  position: fixed; bottom: 96px; right: 28px;
-  width: 380px; max-height: 560px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  box-shadow: 0 0 40px rgba(0,80,160,0.3);
-  flex-direction: column;
-  z-index: 501;
-}
-#ariaPanel.open { display: flex; }
- 
-.aria-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px;
-  background: var(--bg-deep);
-  border-bottom: 1px solid var(--border-dim);
-  flex-shrink: 0;
-}
-.aria-avatar {
-  width: 34px; height: 34px;
-  border: 1px solid var(--accent-cyan);
-  display: grid; place-items: center;
-  font-size: 15px;
-  box-shadow: 0 0 10px rgba(0,212,255,0.3);
-  flex-shrink: 0;
-}
-.aria-title {
-  flex: 1;
-}
-.aria-title h4 {
-  font-family: var(--font-display); font-size: 11px;
-  letter-spacing: 3px; color: var(--accent-cyan); margin: 0;
-}
-.aria-title p {
-  font-family: var(--font-mono); font-size: 9px;
-  color: var(--text-secondary); letter-spacing: 1px; margin: 0;
-}
-.aria-close {
-  background: none; border: none; color: var(--text-secondary);
-  font-size: 18px; cursor: pointer; padding: 0 4px;
-  transition: color 0.2s;
-}
-.aria-close:hover { color: var(--accent-red); }
- 
-.aria-context-bar {
-  padding: 8px 14px;
-  background: rgba(0,212,255,0.04);
-  border-bottom: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary);
-  display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0;
-}
-.aria-score-badge {
-  font-family: var(--font-display); font-size: 11px;
-  font-weight: 700; padding: 2px 8px;
-  border: 1px solid currentColor;
-}
- 
-.aria-messages {
-  flex: 1; overflow-y: auto;
-  padding: 14px;
-  display: flex; flex-direction: column; gap: 12px;
-  scroll-behavior: smooth;
-}
-.aria-messages::-webkit-scrollbar { width: 3px; }
-.aria-messages::-webkit-scrollbar-thumb { background: var(--border-glow); }
- 
-.aria-msg {
-  display: flex; gap: 8px; align-items: flex-start;
-  animation: fadeSlideUp 0.3s ease forwards;
-}
-.aria-msg.user { flex-direction: row-reverse; }
- 
-.aria-msg-avatar {
-  width: 26px; height: 26px; flex-shrink: 0;
-  display: grid; place-items: center;
-  font-size: 11px;
-  border: 1px solid var(--border-dim);
-  background: var(--bg-deep);
-  font-family: var(--font-display);
-  color: var(--text-secondary);
-}
-.aria-msg.bot .aria-msg-avatar { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-.aria-msg.user .aria-msg-avatar { border-color: var(--border-dim); }
- 
-.aria-bubble {
-  max-width: 82%;
-  padding: 10px 13px;
-  font-family: var(--font-mono); font-size: 11px;
-  line-height: 1.6; color: var(--text-primary);
-}
-.aria-msg.bot .aria-bubble {
-  background: var(--bg-card);
-  border: 1px solid var(--border-dim);
-  border-left: 2px solid var(--accent-cyan);
-}
-.aria-msg.user .aria-bubble {
-  background: rgba(0,212,255,0.07);
-  border: 1px solid rgba(0,212,255,0.2);
-  text-align: right;
-}
- 
-.aria-typing {
-  display: flex; gap: 4px; align-items: center; padding: 8px 0;
-}
-.aria-typing span {
-  width: 5px; height: 5px;
-  background: var(--accent-cyan);
-  border-radius: 50%;
-  animation: ariaBounce 1.2s infinite;
-}
-.aria-typing span:nth-child(2) { animation-delay: 0.2s; }
-.aria-typing span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes ariaBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-5px); opacity: 1; }
-}
- 
-.aria-suggestions {
-  padding: 0 14px 10px;
-  display: flex; flex-wrap: wrap; gap: 6px;
-  flex-shrink: 0;
-}
-.aria-chip {
-  padding: 4px 10px;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 9px;
-  color: var(--text-secondary); cursor: pointer;
-  letter-spacing: 1px; transition: all 0.2s;
-}
-.aria-chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
- 
-.aria-input-row {
-  display: flex; gap: 0;
-  padding: 12px 14px;
-  border-top: 1px solid var(--border-dim);
-  background: var(--bg-deep);
-  flex-shrink: 0;
-}
-#ariaMsgInput {
-  flex: 1;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  border-right: none;
-  color: var(--text-primary);
-  font-family: var(--font-mono); font-size: 11px;
-  padding: 9px 12px; outline: none;
-  transition: border-color 0.2s;
-}
-#ariaMsgInput::placeholder { color: var(--text-muted); }
-#ariaMsgInput:focus { border-color: var(--accent-cyan); }
-#ariaSendBtn {
-  background: var(--accent-cyan); border: none;
-  padding: 9px 16px; cursor: pointer;
-  font-family: var(--font-display); font-size: 10px;
-  font-weight: 700; color: var(--bg-void);
-  letter-spacing: 2px; transition: all 0.2s;
-}
-#ariaSendBtn:hover { background: #00eeff; }
-#ariaSendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
- 
-/* No-scan state */
-.aria-no-scan {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 24px; text-align: center; gap: 12px;
-}
-.aria-no-scan p {
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--text-secondary); line-height: 1.6;
-}
-:root {
-  --bg-void: #010408;
-  --bg-deep: #040c14;
-  --bg-panel: #070f1a;
-  --bg-card: #0a1520;
-  --bg-card-hover: #0d1c2a;
-  --border-dim: #0d2035;
-  --border-glow: #0d4a7a;
-  --border-accent: #00d4ff;
-  --text-primary: #c8e8ff;
-  --text-secondary: #5a8aaa;
-  --text-muted: #2a4a65;
-  --accent-cyan: #00d4ff;
-  --accent-blue: #0080ff;
-  --accent-teal: #00ffcc;
-  --accent-red: #ff3366;
-  --accent-orange: #ff7700;
-  --accent-yellow: #ffcc00;
-  --accent-green: #00ff88;
-  --risk-critical: #ff1a4a;
-  --risk-high: #ff6600;
-  --risk-medium: #ffcc00;
-  --risk-low: #00ff88;
-  --font-display: 'Orbitron', monospace;
-  --font-mono: 'Share Tech Mono', monospace;
-  --font-body: 'Exo 2', sans-serif;
-  --glow-cyan: 0 0 20px rgba(0,212,255,0.4);
-  --glow-red: 0 0 20px rgba(255,30,74,0.5);
-  --glow-green: 0 0 20px rgba(0,255,136,0.4);
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BREACH INTEL — Digital Identity Risk Score</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;600&family=Rajdhani:wght@300;400;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ===== ANTI-GRAVITY PARTICLE CANVAS ===== */
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-/* ===== RESET ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg-void);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.6;
-  min-height: 100vh;
-  overflow-x: hidden;
-  cursor: crosshair;
-}
+    /* ===== HERO ANTIGRAVITY BACKGROUND ===== */
+    .hero-antigravity-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 520px;
+      height: 520px;
+      background: url('antigravity-bg.png') center/contain no-repeat;
+      opacity: 0.18;
+      filter: blur(2px);
+      pointer-events: none;
+      z-index: 0;
+      animation: heroFloat 8s ease-in-out infinite;
+    }
 
-/* ===== BACKGROUND GRID ===== */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none; z-index: 0;
-}
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,80,160,0.12) 0%, transparent 70%);
-  pointer-events: none; z-index: 0;
-}
+    @keyframes heroFloat {
 
-/* ===== SCANLINE ===== */
-.scanline {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.6), transparent);
-  animation: scanline 8s linear infinite;
-  z-index: 999; pointer-events: none;
-}
-@keyframes scanline { 0% { top: 0%; } 100% { top: 100%; } }
+      0%,
+      100% {
+        transform: translate(-50%, -50%) translateY(0) scale(1);
+      }
 
-/* ===== WRAPPER ===== */
-.wrapper {
-  position: relative; z-index: 1;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
+      50% {
+        transform: translate(-50%, -50%) translateY(-18px) scale(1.03);
+      }
+    }
 
-/* ===== HEADER ===== */
-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(4,12,20,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-dim);
-  padding: 14px 0;
-}
-.header-inner {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.logo {
-  display: flex; align-items: center; gap: 14px;
-}
-.logo-icon {
-  width: 38px; height: 38px;
-  border: 2px solid var(--accent-cyan);
-  display: grid; place-items: center;
-  box-shadow: var(--glow-cyan);
-  position: relative; overflow: hidden;
-}
-.logo-icon::before {
-  content: '';
-  position: absolute; inset: -2px;
-  background: conic-gradient(from 0deg, transparent, var(--accent-cyan), transparent);
-  animation: spin 4s linear infinite;
-  z-index: 0;
-}
-.logo-icon span {
-  position: relative; z-index: 1;
-  font-family: var(--font-display); font-size: 13px; font-weight: 700;
-  color: var(--accent-cyan); letter-spacing: -1px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.logo-text h1 {
-  font-family: var(--font-display); font-size: 15px; font-weight: 900;
-  letter-spacing: 4px; color: var(--accent-cyan);
-  text-shadow: var(--glow-cyan);
-  line-height: 1;
-}
-.logo-text p {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary); letter-spacing: 2px;
-}
+    /* ===== CYBER-CARD GLASSMORPHISM ===== */
+    .cyber-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+      overflow: hidden;
+    }
 
-.status-bar {
-  display: flex; gap: 16px; align-items: center;
-}
-.status-pill {
-  display: flex; align-items: center; gap: 6px;
-  padding: 4px 12px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary); letter-spacing: 1px;
-}
-.status-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent-teal);
-  box-shadow: 0 0 6px var(--accent-teal);
-  animation: pulse-dot 2s infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-}
+    .cyber-card:hover {
+      transform: translateY(-15px) scale(1.02);
+      border-color: #39ff14;
+      box-shadow: 0 20px 40px rgba(57, 255, 20, 0.15);
+    }
 
-/* ===== HERO ===== */
-.hero {
-  padding: 60px 0 40px;
-  text-align: center;
-  position: relative;
-}
-.hero-tag {
-  display: inline-block;
-  font-family: var(--font-mono); font-size: 11px;
-  letter-spacing: 3px; color: var(--accent-cyan);
-  border: 1px solid rgba(0,212,255,0.3);
-  padding: 4px 16px; margin-bottom: 24px;
-  background: rgba(0,212,255,0.05);
-}
-.hero h2 {
-  font-family: var(--font-display); font-size: clamp(28px, 5vw, 52px);
-  font-weight: 900; letter-spacing: 3px;
-  color: var(--text-primary);
-  line-height: 1.1; margin-bottom: 12px;
-}
-.hero h2 span { color: var(--accent-cyan); text-shadow: var(--glow-cyan); }
-.hero p {
-  font-family: var(--font-mono); font-size: 13px;
-  color: var(--text-secondary); letter-spacing: 1px;
-  max-width: 600px; margin: 0 auto 40px;
-}
+    .cyber-card::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(57, 255, 20, 0.2) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
 
-/* ===== API BADGES ===== */
-.api-badges {
-  display: flex; justify-content: center; gap: 12px;
-  flex-wrap: wrap; margin-bottom: 40px;
-}
-.api-badge {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 16px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--text-secondary);
-  transition: all 0.3s;
-}
-.api-badge:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-.api-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
-.dot-green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
-.dot-cyan { background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
-.dot-blue { background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); }
+    .cyber-card:hover::before {
+      opacity: 1;
+    }
 
-/* ===== SEARCH PANEL ===== */
-.search-panel {
-  max-width: 720px; margin: 0 auto 60px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  box-shadow: 0 0 40px rgba(0,80,160,0.2), inset 0 0 40px rgba(0,20,40,0.5);
-  padding: 28px;
-  position: relative;
-}
-.search-panel::before {
-  content: 'SCAN TARGET';
-  position: absolute; top: -10px; left: 24px;
-  font-family: var(--font-mono); font-size: 10px;
-  letter-spacing: 3px; color: var(--accent-cyan);
-  background: var(--bg-panel); padding: 0 8px;
-}
-.search-panel::after {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, transparent 50%, rgba(0,128,255,0.03) 100%);
-  pointer-events: none;
-}
-.input-group {
-  display: flex; gap: 0;
-  position: relative;
-}
-.input-icon {
-  width: 48px; display: grid; place-items: center;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-glow);
-  border-right: none;
-  color: var(--accent-cyan);
-  font-size: 16px;
-  flex-shrink: 0;
-}
-#emailInput {
-  flex: 1;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-glow);
-  border-right: none;
-  color: var(--text-primary);
-  font-family: var(--font-mono); font-size: 14px;
-  padding: 14px 16px;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  letter-spacing: 1px;
-}
-#emailInput::placeholder { color: var(--text-muted); }
-#emailInput:focus {
-  border-color: var(--accent-cyan);
-  box-shadow: inset 0 0 20px rgba(0,212,255,0.05), 0 0 20px rgba(0,212,255,0.1);
-}
-.scan-btn {
-  background: var(--accent-cyan);
-  color: var(--bg-void);
-  border: none;
-  padding: 14px 28px;
-  font-family: var(--font-display); font-size: 12px;
-  font-weight: 700; letter-spacing: 3px;
-  cursor: pointer;
-  transition: all 0.2s;
-  clip-path: polygon(8px 0%, 100% 0%, 100% 100%, 0% 100%);
-  position: relative; overflow: hidden;
-}
-.scan-btn::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-  transform: translateX(-100%);
-  transition: transform 0.4s;
-}
-.scan-btn:hover { background: #00eeff; box-shadow: 0 0 30px rgba(0,212,255,0.5); }
-.scan-btn:hover::before { transform: translateX(100%); }
-.scan-btn:active { transform: scale(0.98); }
-.scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* ===== CURSOR GLOW FOLLOWER ===== */
+    #cursorGlow {
+      position: fixed;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(57, 255, 20, 0.06) 0%, rgba(0, 242, 255, 0.03) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
 
-.chips-row {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin-top: 16px;
-}
-.chip {
-  padding: 4px 12px;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary); cursor: pointer;
-  transition: all 0.2s; letter-spacing: 1px;
-}
-.chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    body:hover #cursorGlow {
+      opacity: 1;
+    }
 
-/* ===== TERMINAL LOADER ===== */
-#terminal {
-  display: none;
-  max-width: 720px; margin: 0 auto 40px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  padding: 20px;
-  font-family: var(--font-mono); font-size: 12px;
-  position: relative;
-}
-#terminal::before {
-  content: 'SYSTEM OUTPUT';
-  position: absolute; top: -10px; left: 24px;
-  font-size: 10px; letter-spacing: 3px; color: var(--accent-teal);
-  background: var(--bg-panel); padding: 0 8px;
-}
-.term-header {
-  display: flex; gap: 6px; margin-bottom: 12px;
-  padding-bottom: 10px; border-bottom: 1px solid var(--border-dim);
-}
-.term-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-}
-.td-red { background: #ff5f57; } .td-yellow { background: #ffbd2e; } .td-green { background: #28c840; }
-.term-line {
-  padding: 3px 0;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: all 0.3s;
-}
-.term-line.show { opacity: 1; transform: translateY(0); }
-.term-prompt { color: var(--accent-cyan); }
-.term-ok { color: var(--accent-green); }
-.term-warn { color: var(--accent-yellow); }
-.term-err { color: var(--accent-red); }
-.term-info { color: var(--text-secondary); }
-.term-cursor {
-  display: inline-block; width: 8px; height: 14px;
-  background: var(--accent-cyan);
-  animation: blink 1s step-end infinite;
-  vertical-align: middle; margin-left: 4px;
-}
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    /* ===== CSS VARIABLES ===== */
+    /* ===== ARIA CHAT WIDGET ===== */
+    #ariaBtn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 56px;
+      height: 56px;
+      background: var(--accent-cyan);
+      border: none;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      box-shadow: 0 0 24px rgba(0, 212, 255, 0.5);
+      z-index: 500;
+      clip-path: polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px);
+      transition: all 0.2s;
+    }
 
-/* ===== RESULTS ===== */
-#results { display: none; }
+    #ariaBtn:hover {
+      background: #00eeff;
+      box-shadow: 0 0 36px rgba(0, 212, 255, 0.7);
+    }
 
-/* ===== SCORE HERO ===== */
-.score-hero {
-  display: grid; grid-template-columns: 1fr auto 1fr;
-  gap: 24px; align-items: center;
-  margin-bottom: 32px;
-}
-.score-gauge-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.gauge-container {
-  position: relative;
-  width: 200px; height: 200px;
-}
-.gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.gauge-bg { fill: none; stroke: var(--border-dim); stroke-width: 12; }
-.gauge-fill {
-  fill: none; stroke-width: 12;
-  stroke-linecap: butt;
-  stroke-dasharray: 502.65;
-  stroke-dashoffset: 502.65;
-  transition: stroke-dashoffset 2s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s;
-  filter: drop-shadow(0 0 8px currentColor);
-}
-.gauge-glow-ring {
-  fill: none; stroke-width: 1;
-  stroke-dasharray: 502.65; stroke-dashoffset: 502.65;
-  opacity: 0.3;
-  transition: stroke-dashoffset 2s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s;
-}
-.gauge-center {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.gauge-score {
-  font-family: var(--font-display); font-size: 52px; font-weight: 900;
-  line-height: 1; transition: color 0.5s;
-}
-.gauge-label {
-  font-family: var(--font-mono); font-size: 10px;
-  letter-spacing: 3px; color: var(--text-secondary);
-}
-.gauge-risk-level {
-  font-family: var(--font-display); font-size: 11px;
-  letter-spacing: 4px; font-weight: 700;
-  padding: 5px 18px;
-  border: 1px solid currentColor;
-  transition: color 0.5s;
-}
+    #ariaBtn.has-notify::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-red);
+      box-shadow: 0 0 6px var(--accent-red);
+    }
 
-/* Score metadata columns */
-.score-meta {
-  display: flex; flex-direction: column; gap: 12px;
-}
-.meta-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  border-left: 3px solid var(--accent-cyan);
-  padding: 12px 16px;
-}
-.meta-item .mi-label {
-  font-family: var(--font-mono); font-size: 10px;
-  letter-spacing: 2px; color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-.meta-item .mi-value {
-  font-family: var(--font-display); font-size: 18px;
-  font-weight: 700; color: var(--text-primary);
-}
+    #ariaPanel {
+      display: none;
+      position: fixed;
+      bottom: 96px;
+      right: 28px;
+      width: 380px;
+      max-height: 560px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 40px rgba(0, 80, 160, 0.3);
+      flex-direction: column;
+      z-index: 501;
+    }
 
-/* ===== SIGNAL CARDS ===== */
-.signals-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 12px; margin-bottom: 32px;
-}
-.signal-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  padding: 16px;
-  text-align: center;
-  transition: all 0.3s;
-  position: relative; overflow: hidden;
-}
-.signal-card::before {
-  content: '';
-  position: absolute; inset: 0;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.signal-card.active { border-color: var(--accent-red); }
-.signal-card.active::before { background: rgba(255,30,74,0.06); opacity: 1; }
-.signal-card.inactive { border-color: var(--border-dim); opacity: 0.5; }
-.signal-icon { font-size: 22px; margin-bottom: 8px; }
-.signal-label {
-  font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: 2px; color: var(--text-secondary);
-}
-.signal-status {
-  font-family: var(--font-display); font-size: 10px;
-  font-weight: 700; letter-spacing: 2px;
-  margin-top: 4px;
-}
-.signal-card.active .signal-status { color: var(--accent-red); }
-.signal-card.inactive .signal-status { color: var(--text-muted); }
+    #ariaPanel.open {
+      display: flex;
+    }
 
-/* ===== FACTOR CARDS ===== */
-.factors-section { margin-bottom: 32px; }
-.section-title {
-  font-family: var(--font-display); font-size: 11px;
-  letter-spacing: 4px; color: var(--accent-cyan);
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-dim);
-  margin-bottom: 16px;
-  display: flex; align-items: center; gap: 10px;
-}
-.section-title::before {
-  content: '//';
-  color: var(--text-muted);
-}
-.factors-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
-.factor-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  padding: 16px 12px;
-  text-align: center;
-  transition: all 0.3s;
-  position: relative;
-}
-.factor-card:hover { border-color: var(--accent-cyan); transform: translateY(-2px); }
-.factor-icon { font-size: 20px; margin-bottom: 8px; }
-.factor-name {
-  font-family: var(--font-mono); font-size: 9px;
-  letter-spacing: 1px; color: var(--text-secondary);
-  margin-bottom: 10px; line-height: 1.3;
-}
-.factor-score-num {
-  font-family: var(--font-display); font-size: 28px;
-  font-weight: 900; line-height: 1;
-  margin-bottom: 8px;
-}
-.factor-bar-wrap {
-  height: 4px; background: var(--bg-deep);
-  border-radius: 0; overflow: hidden;
-}
-.factor-bar {
-  height: 100%; width: 0%;
-  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.5s;
-  border-radius: 0;
-}
+    .aria-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-deep);
+      border-bottom: 1px solid var(--border-dim);
+      flex-shrink: 0;
+    }
 
-/* ===== ML PIPELINE ===== */
-.ml-section { margin-bottom: 32px; }
-.pipeline-flow {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 0; position: relative;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  padding: 24px 20px;
-}
-.pipeline-flow::before {
-  content: '';
-  position: absolute;
-  top: 50%; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-glow), var(--accent-cyan), var(--border-glow), transparent);
-  z-index: 0;
-}
-.pipeline-step {
-  display: flex; flex-direction: column; align-items: center;
-  text-align: center; position: relative; z-index: 1;
-  padding: 0 12px;
-}
-.pipeline-step:not(:last-child)::after {
-  content: '▶';
-  position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
-  color: var(--accent-cyan); font-size: 12px; z-index: 2;
-}
-.ps-icon {
-  width: 44px; height: 44px;
-  background: var(--bg-deep);
-  border: 1px solid var(--accent-cyan);
-  box-shadow: var(--glow-cyan);
-  display: grid; place-items: center;
-  font-size: 18px; margin-bottom: 10px;
-}
-.ps-title {
-  font-family: var(--font-display); font-size: 9px;
-  letter-spacing: 2px; color: var(--accent-cyan);
-  margin-bottom: 4px;
-}
-.ps-sub {
-  font-family: var(--font-mono); font-size: 9px;
-  color: var(--text-muted); line-height: 1.4;
-}
-.ps-value {
-  font-family: var(--font-display); font-size: 13px;
-  font-weight: 700; color: var(--text-primary);
-  margin-top: 6px;
-}
+    .aria-avatar {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--accent-cyan);
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+      flex-shrink: 0;
+    }
 
-/* ===== SHAP SECTION ===== */
-.shap-section { margin-bottom: 32px; }
-.shap-bars { display: flex; flex-direction: column; gap: 10px; }
-.shap-item {
-  display: grid; grid-template-columns: 160px 1fr auto;
-  align-items: center; gap: 12px;
-  padding: 10px 14px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  transition: border-color 0.3s;
-}
-.shap-item:hover { border-color: var(--border-glow); }
-.shap-label {
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--text-secondary);
-}
-.shap-bar-track { height: 6px; background: var(--bg-deep); position: relative; overflow: hidden; }
-.shap-bar-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
-  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
-}
-.shap-pts {
-  font-family: var(--font-display); font-size: 12px;
-  font-weight: 700; color: var(--accent-cyan);
-  white-space: nowrap;
-}
+    .aria-title {
+      flex: 1;
+    }
 
-/* ===== BREACHES TABLE ===== */
-.breaches-section { margin-bottom: 32px; }
-.breach-controls {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 12px; flex-wrap: wrap;
-}
-.breach-filter {
-  padding: 5px 14px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  color: var(--text-secondary);
-  font-family: var(--font-mono); font-size: 10px;
-  letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
-}
-.breach-filter.active,
-.breach-filter:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0,212,255,0.05); }
-.breach-search {
-  margin-left: auto;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  color: var(--text-primary);
-  font-family: var(--font-mono); font-size: 11px;
-  padding: 5px 12px; outline: none;
-  transition: border-color 0.2s;
-}
-.breach-search:focus { border-color: var(--accent-cyan); }
-.breach-search::placeholder { color: var(--text-muted); }
-.breach-count-label {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary);
-}
+    .aria-title h4 {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--accent-cyan);
+      margin: 0;
+    }
 
-.breach-table-wrap {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  overflow: hidden;
-  max-height: 380px; overflow-y: auto;
-}
-.breach-table-wrap::-webkit-scrollbar { width: 4px; }
-.breach-table-wrap::-webkit-scrollbar-track { background: var(--bg-deep); }
-.breach-table-wrap::-webkit-scrollbar-thumb { background: var(--border-glow); }
-.breach-table {
-  width: 100%; border-collapse: collapse;
-}
-.breach-table th {
-  position: sticky; top: 0;
-  background: var(--bg-deep);
-  font-family: var(--font-display); font-size: 9px;
-  letter-spacing: 2px; color: var(--text-secondary);
-  text-align: left; padding: 10px 14px;
-  border-bottom: 1px solid var(--border-dim);
-}
-.breach-table td {
-  padding: 8px 14px;
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-dim);
-  transition: background 0.2s;
-}
-.breach-table tr:hover td { background: var(--bg-card-hover); }
-.breach-table tr:last-child td { border-bottom: none; }
-.sev-badge {
-  display: inline-block; padding: 2px 8px;
-  font-family: var(--font-display); font-size: 8px;
-  letter-spacing: 1px; font-weight: 700;
-  border: 1px solid currentColor;
-}
-.sev-critical { color: var(--risk-critical); }
-.sev-high { color: var(--risk-high); }
-.sev-medium { color: var(--risk-medium); }
-.sev-low { color: var(--risk-low); }
-.pwd-yes { color: var(--accent-red); font-weight: bold; }
-.pwd-no { color: var(--text-muted); }
-.type-badge {
-  display: inline-block; padding: 2px 8px;
-  font-family: var(--font-mono); font-size: 9px;
-  background: rgba(0,212,255,0.05);
-  border: 1px solid var(--border-dim);
-  color: var(--text-secondary);
-}
+    .aria-title p {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+      margin: 0;
+    }
 
-/* ===== REMEDIATION ===== */
-.remediation-section { margin-bottom: 32px; }
-.remediation-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-.remed-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  border-left: 3px solid var(--accent-cyan);
-  padding: 16px;
-  display: flex; gap: 14px; align-items: flex-start;
-  transition: border-color 0.3s;
-}
-.remed-item:hover { border-color: var(--accent-cyan); }
-.remed-item.urgent { border-left-color: var(--accent-red); }
-.remed-icon { font-size: 20px; flex-shrink: 0; }
-.remed-body .remed-title {
-  font-family: var(--font-display); font-size: 11px;
-  letter-spacing: 2px; color: var(--text-primary);
-  margin-bottom: 4px;
-}
-.remed-body .remed-desc {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary); line-height: 1.5;
-}
-.remed-time {
-  font-family: var(--font-mono); font-size: 9px;
-  color: var(--accent-cyan); margin-top: 6px;
-  letter-spacing: 1px;
-}
+    .aria-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
 
-/* ===== API COVERAGE ===== */
-.coverage-section { margin-bottom: 32px; }
-.coverage-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.cov-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-dim);
-  padding: 20px;
-  display: flex; align-items: center; gap: 16px;
-}
-.cov-icon {
-  width: 44px; height: 44px;
-  display: grid; place-items: center;
-  border: 1px solid var(--border-glow);
-  font-size: 20px; flex-shrink: 0;
-}
-.cov-name {
-  font-family: var(--font-display); font-size: 11px;
-  letter-spacing: 2px; margin-bottom: 4px;
-}
-.cov-sub {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary);
-}
-.cov-status {
-  margin-left: auto;
-  font-family: var(--font-display); font-size: 10px;
-  letter-spacing: 2px; padding: 4px 12px;
-  border: 1px solid currentColor;
-}
-.cov-ok { color: var(--accent-green); }
-.cov-err { color: var(--accent-red); }
+    .aria-close:hover {
+      color: var(--accent-red);
+    }
 
-/* ===== RAW JSON ===== */
-.json-section { margin-bottom: 32px; }
-.json-toggle {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--text-secondary); cursor: pointer;
-  padding: 8px 0; border-bottom: 1px solid var(--border-dim);
-  user-select: none; transition: color 0.2s;
-}
-.json-toggle:hover { color: var(--accent-cyan); }
-.json-toggle span { flex: 1; letter-spacing: 2px; }
-.json-arrow { transition: transform 0.3s; }
-.json-arrow.open { transform: rotate(90deg); }
-.json-body {
-  display: none;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-dim); border-top: none;
-  padding: 16px;
-  font-family: var(--font-mono); font-size: 11px;
-  line-height: 1.6; max-height: 300px; overflow-y: auto;
-  color: var(--text-secondary);
-  white-space: pre-wrap; word-break: break-all;
-}
-.json-body.open { display: block; }
-.j-key { color: var(--accent-cyan); }
-.j-str { color: var(--accent-teal); }
-.j-num { color: var(--accent-orange); }
-.j-bool { color: var(--accent-yellow); }
+    .aria-context-bar {
+      padding: 8px 14px;
+      background: rgba(0, 212, 255, 0.04);
+      border-bottom: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
 
-/* ===== ERROR PANEL ===== */
-#errorPanel {
-  display: none;
-  max-width: 720px; margin: 0 auto 40px;
-  background: rgba(255,30,74,0.05);
-  border: 1px solid var(--accent-red);
-  padding: 20px 24px;
-  font-family: var(--font-mono); font-size: 12px;
-  color: var(--accent-red);
-}
+    .aria-score-badge {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border: 1px solid currentColor;
+    }
 
-/* ===== FOOTER ===== */
-footer {
-  border-top: 1px solid var(--border-dim);
-  padding: 24px 0;
-  margin-top: 40px;
-}
-.footer-inner {
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 12px;
-}
-.footer-logo {
-  font-family: var(--font-display); font-size: 12px;
-  letter-spacing: 3px; color: var(--text-muted);
-}
-.footer-meta {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-muted); letter-spacing: 1px;
-}
-.footer-stack {
-  display: flex; gap: 8px; flex-wrap: wrap;
-}
-.stack-tag {
-  font-family: var(--font-mono); font-size: 9px;
-  padding: 3px 8px;
-  border: 1px solid var(--border-dim);
-  color: var(--text-muted); letter-spacing: 1px;
-}
+    .aria-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-  .factors-grid { grid-template-columns: repeat(3, 1fr); }
-  .signals-grid { grid-template-columns: repeat(2, 1fr); }
-  .score-hero { grid-template-columns: 1fr; }
-  .score-meta:first-child { order: 2; } .score-meta:last-child { order: 3; }
-  .score-gauge-wrap { order: 1; }
-  .pipeline-flow { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .pipeline-flow::before { display: none; }
-  .pipeline-step::after { display: none; }
-}
-@media (max-width: 600px) {
-  .factors-grid { grid-template-columns: repeat(2, 1fr); }
-  .remediation-grid { grid-template-columns: 1fr; }
-  .coverage-grid { grid-template-columns: 1fr; }
-}
+    .aria-messages::-webkit-scrollbar {
+      width: 3px;
+    }
 
-/* ===== ANIMATIONS ===== */
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.anim-in { animation: fadeSlideUp 0.5s ease forwards; opacity: 0; }
-.anim-d1 { animation-delay: 0.1s; }
-.anim-d2 { animation-delay: 0.2s; }
-.anim-d3 { animation-delay: 0.3s; }
-.anim-d4 { animation-delay: 0.4s; }
-.anim-d5 { animation-delay: 0.5s; }
-.anim-d6 { animation-delay: 0.6s; }
+    .aria-messages::-webkit-scrollbar-thumb {
+      background: var(--border-glow);
+    }
 
-/* ===== BREACH TAGS (alternative view) ===== */
-.tags-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
-.breach-tag {
-  padding: 4px 12px;
-  background: rgba(0,212,255,0.04);
-  border: 1px solid var(--border-dim);
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--text-secondary);
-  opacity: 0; animation: fadeSlideUp 0.3s ease forwards;
-  cursor: default; transition: all 0.2s;
-}
-.breach-tag:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-.breach-tag.pwd-breach { border-color: rgba(255,30,74,0.4); color: var(--accent-red); background: rgba(255,30,74,0.04); }
-</style>
+    .aria-msg {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      animation: fadeSlideUp 0.3s ease forwards;
+    }
+
+    .aria-msg.user {
+      flex-direction: row-reverse;
+    }
+
+    .aria-msg-avatar {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      border: 1px solid var(--border-dim);
+      background: var(--bg-deep);
+      font-family: var(--font-display);
+      color: var(--text-secondary);
+    }
+
+    .aria-msg.bot .aria-msg-avatar {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .aria-msg.user .aria-msg-avatar {
+      border-color: var(--border-dim);
+    }
+
+    .aria-bubble {
+      max-width: 82%;
+      padding: 10px 13px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .aria-msg.bot .aria-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-left: 2px solid var(--accent-cyan);
+    }
+
+    .aria-msg.user .aria-bubble {
+      background: rgba(0, 212, 255, 0.07);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      text-align: right;
+    }
+
+    .aria-typing {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .aria-typing span {
+      width: 5px;
+      height: 5px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      animation: ariaBounce 1.2s infinite;
+    }
+
+    .aria-typing span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .aria-typing span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes ariaBounce {
+
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+
+      30% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    .aria-suggestions {
+      padding: 0 14px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .aria-chip {
+      padding: 4px 10px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .aria-chip:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .aria-input-row {
+      display: flex;
+      gap: 0;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border-dim);
+      background: var(--bg-deep);
+      flex-shrink: 0;
+    }
+
+    #ariaMsgInput {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-right: none;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #ariaMsgInput::placeholder {
+      color: var(--text-muted);
+    }
+
+    #ariaMsgInput:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    #ariaSendBtn {
+      background: var(--accent-cyan);
+      border: none;
+      padding: 9px 16px;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--bg-void);
+      letter-spacing: 2px;
+      transition: all 0.2s;
+    }
+
+    #ariaSendBtn:hover {
+      background: #00eeff;
+    }
+
+    #ariaSendBtn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* No-scan state */
+    .aria-no-scan {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .aria-no-scan p {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    :root {
+      --bg-void: #010408;
+      --bg-dark: #05070a;
+      --bg-deep: #040c14;
+      --bg-panel: #070f1a;
+      --bg-card: #0a1520;
+      --bg-card-hover: #0d1c2a;
+      --border-dim: #0d2035;
+      --border-glow: #0d4a7a;
+      --border-accent: #00d4ff;
+      --text-primary: #c8e8ff;
+      --text-secondary: #5a8aaa;
+      --text-muted: #2a4a65;
+      --accent-cyan: #00d4ff;
+      --accent-blue: #0080ff;
+      --accent-teal: #00ffcc;
+      --accent-red: #ff3366;
+      --accent-orange: #ff7700;
+      --accent-yellow: #ffcc00;
+      --accent-green: #00ff88;
+      --neon-green: #39ff14;
+      --neon-cyan: #00f2ff;
+      --risk-critical: #ff1a4a;
+      --risk-high: #ff6600;
+      --risk-medium: #ffcc00;
+      --risk-low: #00ff88;
+      --font-display: 'Orbitron', monospace;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-body: 'Rajdhani', 'Exo 2', sans-serif;
+      --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+      --glow-red: 0 0 20px rgba(255, 30, 74, 0.5);
+      --glow-green: 0 0 20px rgba(57, 255, 20, 0.4);
+      --glow-neon: 0 0 30px rgba(57, 255, 20, 0.5);
+    }
+
+    /* ===== RESET ===== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--bg-dark);
+      background-image: linear-gradient(rgba(5, 7, 10, 0.7), rgba(5, 7, 10, 0.7)), url('antigravity-bg.png');
+      background-size: cover;
+      background-attachment: fixed;
+      background-position: center;
+      color: #e0e0e0;
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* ===== SLOW FLOATING BUBBLES (Low density) ===== */
+    .particle-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .floating-bubble {
+      position: absolute;
+      background: radial-gradient(circle, rgba(0, 242, 255, 0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float-slow 30s linear infinite;
+    }
+
+    @keyframes float-slow {
+      from {
+        transform: translateY(100vh) translateX(0);
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      to {
+        transform: translateY(-100vh) translateX(30px);
+        opacity: 0.4;
+      }
+    }
+
+    /* ===== FEATURE CARD (Cybersecurity Features) ===== */
+    .feature-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .feature-card:hover {
+      border-color: rgba(0, 242, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 600px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== BREACH + CHATBOT SIDE-BY-SIDE ===== */
+    .breach-chat-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .breach-chat-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== INLINE CHATBOT PANEL ===== */
+    .inline-chat {
+      background: #0a0f18;
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+    }
+
+    .inline-chat-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--neon-green);
+    }
+
+    .inline-chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .inline-chat-body::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .inline-chat-body::-webkit-scrollbar-thumb {
+      background: var(--border-glow);
+    }
+
+    .inline-chat-input {
+      display: flex;
+      gap: 0;
+      padding: 10px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .inline-chat-input input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-right: none;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    .inline-chat-input input:focus {
+      border-color: var(--neon-cyan);
+    }
+
+    .inline-chat-input button {
+      background: var(--neon-cyan);
+      border: none;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 2px;
+    }
+
+    /* ===== BACKGROUND GRID ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 80, 160, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== SCANLINE ===== */
+    .scanline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.6), transparent);
+      animation: scanline 8s linear infinite;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    @keyframes scanline {
+      0% {
+        top: 0%;
+      }
+
+      100% {
+        top: 100%;
+      }
+    }
+
+    /* ===== WRAPPER ===== */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(4, 12, 20, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-dim);
+      padding: 14px 0;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border: 2px solid var(--accent-cyan);
+      display: grid;
+      place-items: center;
+      box-shadow: var(--glow-cyan);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: conic-gradient(from 0deg, transparent, var(--accent-cyan), transparent);
+      animation: spin 4s linear infinite;
+      z-index: 0;
+    }
+
+    .logo-icon span {
+      position: relative;
+      z-index: 1;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      letter-spacing: -1px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .logo-text h1 {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--accent-cyan);
+      text-shadow: var(--glow-cyan);
+      line-height: 1;
+    }
+
+    .logo-text p {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: 2px;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-teal);
+      box-shadow: 0 0 6px var(--accent-teal);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 80px 0 50px;
+      text-align: center;
+      position: relative;
+      overflow: visible;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      padding: 4px 16px;
+      margin-bottom: 24px;
+      background: rgba(0, 212, 255, 0.05);
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h2 {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--text-primary);
+      line-height: 1.1;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h2 span {
+      color: var(--accent-cyan);
+      text-shadow: var(--glow-cyan);
+    }
+
+    .hero p {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===== API BADGES ===== */
+    .api-badges {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .api-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      transition: all 0.3s;
+    }
+
+    .api-badge:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .api-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .dot-green {
+      background: var(--accent-green);
+      box-shadow: 0 0 6px var(--accent-green);
+    }
+
+    .dot-cyan {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+    }
+
+    .dot-blue {
+      background: var(--accent-blue);
+      box-shadow: 0 0 6px var(--accent-blue);
+    }
+
+    /* ===== SEARCH PANEL ===== */
+    .search-panel {
+      max-width: 720px;
+      margin: 0 auto 60px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 40px rgba(0, 80, 160, 0.2), inset 0 0 40px rgba(0, 20, 40, 0.5);
+      padding: 28px;
+      position: relative;
+    }
+
+    .search-panel::before {
+      content: 'SCAN TARGET';
+      position: absolute;
+      top: -10px;
+      left: 24px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--accent-cyan);
+      background: var(--bg-panel);
+      padding: 0 8px;
+    }
+
+    .search-panel::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.03) 0%, transparent 50%, rgba(0, 128, 255, 0.03) 100%);
+      pointer-events: none;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0;
+      position: relative;
+    }
+
+    .input-icon {
+      width: 48px;
+      display: grid;
+      place-items: center;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-glow);
+      border-right: none;
+      color: var(--accent-cyan);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    #emailInput {
+      flex: 1;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-glow);
+      border-right: none;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      letter-spacing: 1px;
+    }
+
+    #emailInput::placeholder {
+      color: var(--text-muted);
+    }
+
+    #emailInput:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05), 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+
+    .scan-btn {
+      background: var(--accent-cyan);
+      color: var(--bg-void);
+      border: none;
+      padding: 14px 28px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      clip-path: polygon(8px 0%, 100% 0%, 100% 100%, 0% 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scan-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.4s;
+    }
+
+    .scan-btn:hover {
+      background: #00eeff;
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+    }
+
+    .scan-btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .scan-btn:active {
+      transform: scale(0.98);
+    }
+
+    .scan-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .chip {
+      padding: 4px 12px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .chip:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    /* ===== TERMINAL LOADER ===== */
+    #terminal {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto 40px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      position: relative;
+    }
+
+    #terminal::before {
+      content: 'SYSTEM OUTPUT';
+      position: absolute;
+      top: -10px;
+      left: 24px;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--accent-teal);
+      background: var(--bg-panel);
+      padding: 0 8px;
+    }
+
+    .term-header {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .term-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .td-red {
+      background: #ff5f57;
+    }
+
+    .td-yellow {
+      background: #ffbd2e;
+    }
+
+    .td-green {
+      background: #28c840;
+    }
+
+    .term-line {
+      padding: 3px 0;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: all 0.3s;
+    }
+
+    .term-line.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .term-prompt {
+      color: var(--accent-cyan);
+    }
+
+    .term-ok {
+      color: var(--accent-green);
+    }
+
+    .term-warn {
+      color: var(--accent-yellow);
+    }
+
+    .term-err {
+      color: var(--accent-red);
+    }
+
+    .term-info {
+      color: var(--text-secondary);
+    }
+
+    .term-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: var(--accent-cyan);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    /* ===== RESULTS ===== */
+    #results {
+      display: none;
+    }
+
+    /* ===== SCORE HERO ===== */
+    .score-hero {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .score-gauge-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gauge-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: var(--border-dim);
+      stroke-width: 12;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: butt;
+      stroke-dasharray: 502.65;
+      stroke-dashoffset: 502.65;
+      transition: stroke-dashoffset 2s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+
+    .gauge-glow-ring {
+      fill: none;
+      stroke-width: 1;
+      stroke-dasharray: 502.65;
+      stroke-dashoffset: 502.65;
+      opacity: 0.3;
+      transition: stroke-dashoffset 2s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s;
+    }
+
+    .gauge-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-score {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1;
+      transition: color 0.5s;
+    }
+
+    .gauge-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--text-secondary);
+    }
+
+    .gauge-risk-level {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 4px;
+      font-weight: 700;
+      padding: 5px 18px;
+      border: 1px solid currentColor;
+      transition: color 0.5s;
+    }
+
+    /* Score metadata columns */
+    .score-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .meta-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 12px 16px;
+    }
+
+    .meta-item .mi-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .meta-item .mi-value {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* ===== SIGNAL CARDS ===== */
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .signal-card {
+      background: rgba(7, 15, 26, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-dim);
+      padding: 16px;
+      text-align: center;
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .signal-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .signal-card.active {
+      border-color: var(--accent-red);
+    }
+
+    .signal-card.active::before {
+      background: rgba(255, 30, 74, 0.06);
+      opacity: 1;
+    }
+
+    .signal-card.inactive {
+      border-color: var(--border-dim);
+      opacity: 0.5;
+    }
+
+    .signal-icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .signal-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-secondary);
+    }
+
+    .signal-status {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-top: 4px;
+    }
+
+    .signal-card.active .signal-status {
+      color: var(--accent-red);
+    }
+
+    .signal-card.inactive .signal-status {
+      color: var(--text-muted);
+    }
+
+    /* ===== FACTOR CARDS ===== */
+    .factors-section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent-cyan);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-dim);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: '//';
+      color: var(--text-muted);
+    }
+
+    .factors-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .factor-card {
+      background: rgba(7, 15, 26, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-dim);
+      padding: 16px 12px;
+      text-align: center;
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .factor-card::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .factor-card:hover::before {
+      opacity: 1;
+    }
+
+    .factor-card:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 15px 30px rgba(0, 212, 255, 0.12);
+    }
+
+    .factor-icon {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .factor-name {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+
+    .factor-score-num {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .factor-bar-wrap {
+      height: 4px;
+      background: var(--bg-deep);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .factor-bar {
+      height: 100%;
+      width: 0%;
+      transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.5s;
+      border-radius: 0;
+    }
+
+    /* ===== ML PIPELINE ===== */
+    .ml-section {
+      margin-bottom: 32px;
+    }
+
+    .pipeline-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      position: relative;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      padding: 24px 20px;
+    }
+
+    .pipeline-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-glow), var(--accent-cyan), var(--border-glow), transparent);
+      z-index: 0;
+    }
+
+    .pipeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      padding: 0 12px;
+    }
+
+    .pipeline-step:not(:last-child)::after {
+      content: '▶';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent-cyan);
+      font-size: 12px;
+      z-index: 2;
+    }
+
+    .ps-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--bg-deep);
+      border: 1px solid var(--accent-cyan);
+      box-shadow: var(--glow-cyan);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .ps-title {
+      font-family: var(--font-display);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+      margin-bottom: 4px;
+    }
+
+    .ps-sub {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .ps-value {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 6px;
+    }
+
+    /* ===== SHAP SECTION ===== */
+    .shap-section {
+      margin-bottom: 32px;
+    }
+
+    .shap-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .shap-item {
+      display: grid;
+      grid-template-columns: 160px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      transition: border-color 0.3s;
+    }
+
+    .shap-item:hover {
+      border-color: var(--border-glow);
+    }
+
+    .shap-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .shap-bar-track {
+      height: 6px;
+      background: var(--bg-deep);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shap-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+      transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+    }
+
+    .shap-pts {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      white-space: nowrap;
+    }
+
+    /* ===== BREACHES TABLE ===== */
+    .breaches-section {
+      margin-bottom: 32px;
+    }
+
+    .breach-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .breach-filter {
+      padding: 5px 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .breach-filter.active,
+    .breach-filter:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .breach-search {
+      margin-left: auto;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 5px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .breach-search:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .breach-search::placeholder {
+      color: var(--text-muted);
+    }
+
+    .breach-count-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .breach-table-wrap {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      overflow: hidden;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .breach-table-wrap::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .breach-table-wrap::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+
+    .breach-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--border-glow);
+    }
+
+    .breach-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .breach-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-deep);
+      font-family: var(--font-display);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-secondary);
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .breach-table td {
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-dim);
+      transition: background 0.2s;
+    }
+
+    .breach-table tr:hover td {
+      background: var(--bg-card-hover);
+    }
+
+    .breach-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .sev-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: var(--font-display);
+      font-size: 8px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      border: 1px solid currentColor;
+    }
+
+    .sev-critical {
+      color: var(--risk-critical);
+    }
+
+    .sev-high {
+      color: var(--risk-high);
+    }
+
+    .sev-medium {
+      color: var(--risk-medium);
+    }
+
+    .sev-low {
+      color: var(--risk-low);
+    }
+
+    .pwd-yes {
+      color: var(--accent-red);
+      font-weight: bold;
+    }
+
+    .pwd-no {
+      color: var(--text-muted);
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid var(--border-dim);
+      color: var(--text-secondary);
+    }
+
+    /* ===== REMEDIATION ===== */
+    .remediation-section {
+      margin-bottom: 32px;
+    }
+
+    .remediation-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .remed-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 16px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: border-color 0.3s;
+    }
+
+    .remed-item:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    .remed-item.urgent {
+      border-left-color: var(--accent-red);
+    }
+
+    .remed-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .remed-body .remed-title {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .remed-body .remed-desc {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .remed-time {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--accent-cyan);
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    /* ===== API COVERAGE ===== */
+    .coverage-section {
+      margin-bottom: 32px;
+    }
+
+    .coverage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .cov-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cov-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border-glow);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .cov-name {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .cov-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .cov-status {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 2px;
+      padding: 4px 12px;
+      border: 1px solid currentColor;
+    }
+
+    .cov-ok {
+      color: var(--accent-green);
+    }
+
+    .cov-err {
+      color: var(--accent-red);
+    }
+
+    /* ===== RAW JSON ===== */
+    .json-section {
+      margin-bottom: 32px;
+    }
+
+    .json-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-dim);
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .json-toggle:hover {
+      color: var(--accent-cyan);
+    }
+
+    .json-toggle span {
+      flex: 1;
+      letter-spacing: 2px;
+    }
+
+    .json-arrow {
+      transition: transform 0.3s;
+    }
+
+    .json-arrow.open {
+      transform: rotate(90deg);
+    }
+
+    .json-body {
+      display: none;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-dim);
+      border-top: none;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .json-body.open {
+      display: block;
+    }
+
+    .j-key {
+      color: var(--accent-cyan);
+    }
+
+    .j-str {
+      color: var(--accent-teal);
+    }
+
+    .j-num {
+      color: var(--accent-orange);
+    }
+
+    .j-bool {
+      color: var(--accent-yellow);
+    }
+
+    /* ===== ERROR PANEL ===== */
+    #errorPanel {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto 40px;
+      background: rgba(255, 30, 74, 0.05);
+      border: 1px solid var(--accent-red);
+      padding: 20px 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-red);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      border-top: 1px solid var(--border-dim);
+      padding: 24px 0;
+      margin-top: 40px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+    }
+
+    .footer-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .footer-stack {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stack-tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      padding: 3px 8px;
+      border: 1px solid var(--border-dim);
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .factors-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .signals-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .score-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .score-meta:first-child {
+        order: 2;
+      }
+
+      .score-meta:last-child {
+        order: 3;
+      }
+
+      .score-gauge-wrap {
+        order: 1;
+      }
+
+      .pipeline-flow {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+
+      .pipeline-flow::before {
+        display: none;
+      }
+
+      .pipeline-step::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .factors-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .remediation-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .coverage-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .anim-in {
+      animation: fadeSlideUp 0.5s ease forwards;
+      opacity: 0;
+    }
+
+    .anim-d1 {
+      animation-delay: 0.1s;
+    }
+
+    .anim-d2 {
+      animation-delay: 0.2s;
+    }
+
+    .anim-d3 {
+      animation-delay: 0.3s;
+    }
+
+    .anim-d4 {
+      animation-delay: 0.4s;
+    }
+
+    .anim-d5 {
+      animation-delay: 0.5s;
+    }
+
+    .anim-d6 {
+      animation-delay: 0.6s;
+    }
+
+    /* ===== BREACH TAGS (alternative view) ===== */
+    .tags-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .breach-tag {
+      padding: 4px 12px;
+      background: rgba(0, 212, 255, 0.04);
+      border: 1px solid var(--border-dim);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+      opacity: 0;
+      animation: fadeSlideUp 0.3s ease forwards;
+      cursor: default;
+      transition: all 0.2s;
+    }
+
+    .breach-tag:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .breach-tag.pwd-breach {
+      border-color: rgba(255, 30, 74, 0.4);
+      color: var(--accent-red);
+      background: rgba(255, 30, 74, 0.04);
+    }
+
+    /* ====================================================================
+   LANDING PAGE — "Anti-Gravity Gateway"
+   ==================================================================== */
+    #landingPage {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 10;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    #landingPage.exit {
+      opacity: 0;
+      transform: scale(0.95) translateY(-40px);
+      pointer-events: none;
+    }
+
+    /* Floating sphere glow */
+    .landing-sphere-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(57, 255, 20, 0.12) 0%, rgba(0, 242, 255, 0.06) 40%, transparent 70%);
+      border-radius: 50%;
+      animation: landingSphereBreath 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes landingSphereBreath {
+
+      0%,
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.7;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        opacity: 1;
+      }
+    }
+
+    /* Landing content */
+    .landing-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      animation: landingFadeIn 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+
+    @keyframes landingFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.92) translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .landing-subtitle {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 0.8em;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: landingFadeIn 1s 0.3s forwards;
+    }
+
+    .landing-title {
+      font-family: var(--font-display);
+      font-size: clamp(48px, 10vw, 110px);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -2px;
+      line-height: 0.95;
+      margin-bottom: 40px;
+      text-shadow: 0 0 60px rgba(255, 255, 255, 0.08);
+    }
+
+    .landing-title .accent {
+      color: var(--neon-green);
+      text-shadow: 0 0 40px rgba(57, 255, 20, 0.4), 0 0 80px rgba(57, 255, 20, 0.15);
+    }
+
+    /* Verify button — "Hand closing" animation */
+    .verify-btn {
+      position: relative;
+      display: inline-block;
+      padding: 18px 52px;
+      background: transparent;
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s;
+      text-decoration: none;
+      opacity: 0;
+      animation: landingFadeIn 1s 0.6s forwards;
+    }
+
+    .verify-btn .btn-text {
+      position: relative;
+      z-index: 2;
+      transition: color 0.4s;
+    }
+
+    .verify-btn .btn-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--neon-green);
+      transform: translateY(100%);
+      transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 0;
+    }
+
+    .verify-btn .btn-alt {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      opacity: 0;
+      transition: opacity 0.3s 0.15s;
+      z-index: 3;
+    }
+
+    .verify-btn:hover .btn-bg {
+      transform: translateY(0);
+    }
+
+    .verify-btn:hover .btn-text {
+      color: transparent;
+    }
+
+    .verify-btn:hover .btn-alt {
+      opacity: 1;
+    }
+
+    .verify-btn:hover {
+      box-shadow: 0 0 40px rgba(57, 255, 20, 0.3), 0 0 80px rgba(57, 255, 20, 0.1);
+    }
+
+    .verify-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Footer capabilities */
+    .landing-footer {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      gap: 60px;
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: rgba(255, 255, 255, 0.15);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: landingFadeIn 1s 0.9s forwards;
+    }
+
+    .landing-footer span {
+      transition: color 0.3s;
+    }
+
+    .landing-footer span:hover {
+      color: var(--neon-green);
+    }
+
+    /* Hand-glow overlay (mouse-following) */
+    .hand-glow-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(57, 255, 20, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .hand-glow-overlay.active {
+      opacity: 1;
+    }
+
+    /* Floating animation for cards */
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-15px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .antigravity-float {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    /* Dashboard view transition */
+    #dashboardView {
+      display: none;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    #dashboardView.visible {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== TACTICAL HEADER REDESIGN ===== */
+    .tactical-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0 20px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tactical-logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tactical-logo-cube {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tactical-logo-cube .cube-inner {
+      width: 16px;
+      height: 16px;
+      background: var(--neon-cyan);
+      animation: pulse-dot 2s infinite;
+    }
+
+    .tactical-logo-text {
+      font-family: var(--font-display);
+      font-size: 18px;
+      letter-spacing: 4px;
+      font-weight: 700;
+    }
+
+    .tactical-logo-text .version {
+      color: rgba(255, 255, 255, 0.25);
+      font-weight: 400;
+    }
+
+    .tactical-status {
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--neon-green);
+    }
+
+    /* ===== METRIC BOX (Tactical Dashboard) ===== */
+    .metric-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 20px 24px;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      cursor: pointer;
+    }
+
+    .metric-box:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .metric-box .metric-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-bottom: 8px;
+    }
+
+    .metric-box .metric-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      transition: transform 0.3s;
+    }
+
+    .metric-box .metric-value.cyan {
+      color: var(--neon-cyan);
+    }
+
+    .metric-box:hover .metric-value {
+      transform: translateX(8px);
+    }
+
+    /* ===== TACTICAL SCORE CENTER ===== */
+    .tactical-score-center {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .tactical-score-center .critical-tag {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--accent-red);
+    }
+
+    .tactical-score-big {
+      font-family: var(--font-display);
+      font-size: 84px;
+      font-weight: 900;
+      line-height: 1;
+      transition: color 0.5s;
+    }
+
+    .tactical-score-label {
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 12px;
+    }
+
+    /* ===== TACTICAL DATA GRID ===== */
+    .tactical-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .tactical-metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .tactical-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== BREACH LOG HEADER ===== */
+    .breach-log-header {
+      padding: 14px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--neon-cyan);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .highlight-cyan {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+      font-weight: bold;
+    }
+    /* ===== SHAP EXPLAINABILITY PANEL ===== */
+    .shap-panel {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .shap-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .shap-legend {
+      display: flex;
+      gap: 16px;
+      font-size: 11px;
+      font-family: var(--font-display);
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 1px;
+    }
+    .legend-sq {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .legend-sq.red {
+      background: rgba(220, 38, 38, 0.8);
+      box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+    }
+    .legend-sq.green {
+      background: rgba(57, 255, 20, 0.8);
+      box-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+    }
+    .shap-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+    .shap-row {
+      display: flex;
+      align-items: center;
+    }
+    .shap-label {
+      width: 160px;
+      text-align: right;
+      padding-right: 16px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .shap-bar-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .shap-bar {
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 4px rgba(0,0,0,0.8);
+    }
+    .shap-bar.red {
+      background: rgba(220, 38, 38, 0.6);
+      border: 1px solid var(--accent-red);
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    }
+    .shap-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .shap-footer-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .shap-footer-item.right {
+      align-items: flex-end;
+    }
+    .shap-number {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .shap-footer-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-top: 4px;
+    }
+  </style>
 </head>
+
 <body>
-  <!-- ARIA AI CHAT BUTTON -->
-<button id="ariaBtn" onclick="toggleAriaPanel()" title="Ask ARIA — AI Security Advisor">🤖</button>
- 
-<!-- ARIA PANEL -->
-<div id="ariaPanel">
- 
-  <!-- Header -->
-  <div class="aria-header">
-    <div class="aria-avatar">AI</div>
-    <div class="aria-title">
-      <h4>ARIA</h4>
-      <p>AI RISK INTELLIGENCE ADVISOR</p>
+  <!-- ANTI-GRAVITY PARTICLE FIELD -->
+  <canvas id="particleCanvas"></canvas>
+  <!-- CURSOR GLOW FOLLOWER -->
+  <div id="cursorGlow"></div>
+  <!-- HAND-GLOW OVERLAY (mouse-following green radial) -->
+  <div class="hand-glow-overlay" id="handGlow"></div>
+
+  <!-- ================================================================
+       PAGE 1: ANTI-GRAVITY GATEWAY (Landing Page)
+       ================================================================ -->
+  <div id="landingPage">
+    <!-- Minimal floating bubbles (low density) -->
+    <div class="particle-container">
+      <div class="floating-bubble" style="width:80px;height:80px;left:10%;opacity:0.15"></div>
+      <div class="floating-bubble" style="width:130px;height:130px;left:80%;opacity:0.08;animation-delay:5s"></div>
+      <div class="floating-bubble" style="width:60px;height:60px;left:45%;opacity:0.12;animation-delay:12s"></div>
+      <div class="floating-bubble" style="width:100px;height:100px;left:25%;opacity:0.1;animation-delay:18s"></div>
     </div>
-    <button class="aria-close" onclick="toggleAriaPanel()">✕</button>
-  </div>
- 
-  <!-- Context bar (score pill) — shown after scan -->
-  <div class="aria-context-bar" id="ariaContextBar" style="display:none">
-    <span>ACTIVE PROFILE:</span>
-    <span class="aria-score-badge" id="ariaScoreBadge">—</span>
-    <span id="ariaRiskLabel" style="margin-left:auto"></span>
-  </div>
- 
-  <!-- Messages -->
-  <div class="aria-messages" id="ariaMessages"></div>
- 
-  <!-- Quick suggestion chips -->
-  <div class="aria-suggestions" id="ariaSuggestions"></div>
- 
-  <!-- Input -->
-  <div class="aria-input-row">
-    <input id="ariaMsgInput" type="text"
-      placeholder="Ask about your breach exposure..."
-      maxlength="1000"
-      onkeydown="if(event.key==='Enter') ariaSend()"
-    />
-    <button id="ariaSendBtn" onclick="ariaSend()">SEND</button>
-  </div>
- 
-</div>
 
-<div class="scanline"></div>
+    <!-- Floating sphere glow -->
+    <div class="landing-sphere-glow"></div>
 
-<!-- HEADER -->
-<header>
-  <div class="wrapper">
-    <div class="header-inner">
-      <div class="logo">
-        <div class="logo-icon"><span>BI</span></div>
-        <div class="logo-text">
-          <h1>BREACH INTEL</h1>
-          <p>DIGITAL IDENTITY RISK SCORE · v3.0</p>
+    <!-- Center content -->
+    <div class="landing-content">
+      <p class="landing-subtitle">Detection and Response</p>
+      <h1 class="landing-title">
+        BREACH <span class="accent">INTEL</span>
+      </h1>
+
+      <!-- Centered Verify Button -->
+      <div style="display:flex;justify-content:center">
+        <button class="verify-btn" id="verifyBtn" onclick="enterDashboard()">
+          <span class="btn-text">VERIFY YOUR EMAIL</span>
+          <div class="btn-bg"></div>
+          <span class="btn-alt">INITIATE SCAN</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer capabilities -->
+    <div class="landing-footer">
+      <span>OFFENSIVE SECURITY</span>
+      <span>THREAT INTELLIGENCE</span>
+      <span>NIST COMPLIANCE</span>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       PAGE 2: TACTICAL DASHBOARD (hidden until Verify clicked)
+       ================================================================ -->
+  <div id="dashboardView">
+
+    <!-- ARIA AI CHAT BUTTON (Visually removed, DOM retained for API integration) -->
+    <button id="ariaBtn" style="display:none!important"></button>
+
+    <!-- ARIA PANEL (Visually removed, DOM retained for API integration) -->
+    <div id="ariaPanel" style="display:none!important">
+
+      <!-- Header -->
+      <div class="aria-header">
+        <div class="aria-avatar">AI</div>
+        <div class="aria-title">
+          <h4>ARIA</h4>
+          <p>AI RISK INTELLIGENCE ADVISOR</p>
         </div>
+        <button class="aria-close" onclick="toggleAriaPanel()">✕</button>
       </div>
-      <div class="status-bar">
-        <div class="status-pill"><span class="status-dot"></span> SYSTEM ONLINE</div>
-        <div class="status-pill">ML ENGINE READY</div>
-        <div class="status-pill" id="headerQuota">API QUOTA: —</div>
+
+      <!-- Context bar (score pill) — shown after scan -->
+      <div class="aria-context-bar" id="ariaContextBar" style="display:none">
+        <span>ACTIVE PROFILE:</span>
+        <span class="aria-score-badge" id="ariaScoreBadge">—</span>
+        <span id="ariaRiskLabel" style="margin-left:auto"></span>
       </div>
-    </div>
-  </div>
-</header>
 
-<!-- HERO -->
-<div class="wrapper">
-  <div class="hero">
-    <div class="hero-tag">AI-POWERED CYBER EXPOSURE INTELLIGENCE</div>
-    <h2>KNOW YOUR <span>BREACH</span> EXPOSURE</h2>
-    <p>Dual API scanning · RandomForest ML · SHAP explainability · Real-time threat intelligence</p>
+      <!-- Messages -->
+      <div class="aria-messages" id="ariaMessages"></div>
 
-    <div class="api-badges">
-      <div class="api-badge"><span class="dot dot-green"></span> XposedOrNot — Free, No Key</div>
-      <div class="api-badge"><span class="dot dot-cyan"></span> LeakHunter AI — RapidAPI</div>
-      <div class="api-badge"><span class="dot dot-blue"></span> RandomForest + IsolationForest</div>
-      <div class="api-badge"><span class="dot dot-green"></span> SHAP Explainability</div>
-    </div>
+      <!-- Quick suggestion chips -->
+      <div class="aria-suggestions" id="ariaSuggestions"></div>
 
-    <!-- SEARCH PANEL -->
-    <div class="search-panel">
-      <div class="input-group">
-        <div class="input-icon">⌕</div>
-        <input type="email" id="emailInput" placeholder="target@domain.com" autocomplete="off" spellcheck="false">
-        <button class="scan-btn" id="scanBtn" onclick="runScan()">SCAN ▶</button>
+      <!-- Input -->
+      <div class="aria-input-row">
+        <input id="ariaMsgInput" type="text" placeholder="Ask about your breach exposure..." maxlength="1000"
+          onkeydown="if(event.key==='Enter') ariaSend()" />
+        <button id="ariaSendBtn" onclick="ariaSend()">SEND</button>
       </div>
-      <div class="chips-row">
-        <span class="chip" onclick="setDemo('admin@company.com')">admin@company.com</span>
-        <span class="chip" onclick="setDemo('test@gmail.com')">test@gmail.com</span>
-        <span class="chip" onclick="setDemo('user@example.com')">user@example.com</span>
-        <span class="chip" onclick="setDemo('secure@protonmail.com')">secure@protonmail.com</span>
-      </div>
+
     </div>
-  </div>
 
-  <!-- TERMINAL -->
-  <div id="terminal">
-    <div class="term-header">
-      <div class="term-dot td-red"></div>
-      <div class="term-dot td-yellow"></div>
-      <div class="term-dot td-green"></div>
-    </div>
-    <div id="termLines"></div>
-  </div>
+    <div class="scanline"></div>
 
-  <!-- ERROR -->
-  <div id="errorPanel"></div>
-
-  <!-- RESULTS -->
-  <div id="results">
-
-    <!-- SCORE HERO -->
-    <div class="score-hero anim-in anim-d1">
-      <div class="score-meta">
-        <div class="meta-item">
-          <div class="mi-label">EXPOSURE COUNT</div>
-          <div class="mi-value" id="metaExposures">—</div>
+    <!-- TACTICAL HEADER -->
+    <div class="wrapper">
+      <div class="tactical-header">
+        <div class="tactical-logo">
+          <div class="tactical-logo-cube">
+            <div class="cube-inner"></div>
+          </div>
+          <span class="tactical-logo-text">BREACH_INTEL <span class="version">v3.0</span></span>
         </div>
-        <div class="meta-item">
-          <div class="mi-label">PASSWORD LEAKS</div>
-          <div class="mi-value" id="metaPasswords">—</div>
-        </div>
-        <div class="meta-item">
-          <div class="mi-label">FIRST BREACH</div>
-          <div class="mi-value" id="metaFirst">—</div>
-        </div>
+        <div class="tactical-status" style="animation:pulse-dot 2s infinite">ACTIVE</div>
       </div>
+    </div>
 
-      <div class="score-gauge-wrap">
-        <div class="gauge-container">
-          <svg class="gauge-svg" viewBox="0 0 180 180">
-            <circle class="gauge-bg" cx="90" cy="90" r="80"/>
-            <circle class="gauge-glow-ring" id="gaugeGlow" cx="90" cy="90" r="80"/>
-            <circle class="gauge-fill" id="gaugeFill" cx="90" cy="90" r="80"/>
-          </svg>
-          <div class="gauge-center">
-            <div class="gauge-score" id="gaugeScore">0</div>
-            <div class="gauge-label">RISK SCORE</div>
+    <!-- HERO (Badges removed, centered clean layout) -->
+    <div class="wrapper">
+      <div class="hero">
+        <div class="hero-tag">AI-POWERED CYBER EXPOSURE INTELLIGENCE</div>
+        <h2>KNOW YOUR <span>BREACH</span> EXPOSURE</h2>
+        <p>Real-time threat intelligence · Deep-web scanning · Identity risk analysis</p>
+
+        <!-- SEARCH PANEL -->
+        <div class="search-panel">
+          <div class="input-group">
+            <div class="input-icon">⌕</div>
+            <input type="email" id="emailInput" placeholder="target@domain.com" autocomplete="off" spellcheck="false">
+            <button class="scan-btn" id="scanBtn" onclick="runScan()">SCAN ▶</button>
+          </div>
+          <div class="chips-row">
+            <span class="chip" onclick="setDemo('admin@company.com')">admin@company.com</span>
+            <span class="chip" onclick="setDemo('test@gmail.com')">test@gmail.com</span>
+            <span class="chip" onclick="setDemo('user@example.com')">user@example.com</span>
+            <span class="chip" onclick="setDemo('secure@protonmail.com')">secure@protonmail.com</span>
           </div>
         </div>
-        <div class="gauge-risk-level" id="gaugeRisk">SCANNING...</div>
       </div>
 
-      <div class="score-meta">
-        <div class="meta-item">
-          <div class="mi-label">LATEST BREACH</div>
-          <div class="mi-value" id="metaLatest">—</div>
+      <!-- TERMINAL -->
+      <div id="terminal">
+        <div class="term-header">
+          <div class="term-dot td-red"></div>
+          <div class="term-dot td-yellow"></div>
+          <div class="term-dot td-green"></div>
         </div>
-        <div class="meta-item">
-          <div class="mi-label">AVG SEVERITY</div>
-          <div class="mi-value" id="metaSeverity">—</div>
+        <div id="termLines"></div>
+      </div>
+
+      <!-- ERROR -->
+      <div id="errorPanel"></div>
+
+      <!-- RESULTS -->
+      <div id="results">
+
+        <!-- TACTICAL DATA GRID: Score Center + Metric Boxes -->
+        <div class="tactical-grid anim-in anim-d1">
+          <!-- LEFT: Pulsing risk score center -->
+          <div class="tactical-score-center antigravity-float">
+            <div class="critical-tag" id="criticalTag">CRITICAL_LEVEL</div>
+            <div class="tactical-score-big" id="gaugeScore"
+              style="color:var(--accent-red);text-shadow:0 0 15px rgba(220,38,38,0.5)">0</div>
+            <div class="tactical-score-label">GLOBAL_RISK_INDEX</div>
+            <div class="gauge-risk-level" id="gaugeRisk" style="margin-top:16px">SCANNING...</div>
+            <!-- Hidden SVG gauge for animation logic -->
+            <div style="position:absolute;width:0;height:0;overflow:hidden">
+              <svg viewBox="0 0 180 180">
+                <circle class="gauge-bg" cx="90" cy="90" r="80" />
+                <circle class="gauge-glow-ring" id="gaugeGlow" cx="90" cy="90" r="80" />
+                <circle class="gauge-fill" id="gaugeFill" cx="90" cy="90" r="80" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- RIGHT: Floating metric boxes -->
+          <div class="tactical-metrics-grid">
+            <div class="metric-box">
+              <div class="metric-label"><span class="highlight-cyan">TOTAL EXPOSURES</span></div>
+              <div class="metric-value" id="metaExposures">—</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label"><span class="highlight-cyan">PASSWORD LEAKS</span></div>
+              <div class="metric-value cyan" id="metaPasswords">—</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label"><span class="highlight-cyan">LATEST THREAT</span></div>
+              <div class="metric-value" id="metaLatest">—</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label"><span class="highlight-cyan">AVG SEVERITY</span></div>
+              <div class="metric-value" id="metaSeverity">—</div>
+            </div>
+          </div>
         </div>
-        <div class="meta-item">
-          <div class="mi-label">API QUOTA LEFT</div>
-          <div class="mi-value" id="metaQuota">—</div>
+
+        <!-- SIGNALS -->
+        <div class="signals-grid anim-in anim-d2">
+          <div class="signal-card" id="sig-password">
+            <div class="signal-icon">🔑</div>
+            <div class="signal-label">PASSWORD EXPOSED</div>
+            <div class="signal-status">CHECKING...</div>
+          </div>
+          <div class="signal-card" id="sig-recent">
+            <div class="signal-icon">⚡</div>
+            <div class="signal-label">RECENT BREACH</div>
+            <div class="signal-status">CHECKING...</div>
+          </div>
+          <div class="signal-card" id="sig-multiple">
+            <div class="signal-icon">📊</div>
+            <div class="signal-label">MULTIPLE EXPOSURES</div>
+            <div class="signal-status">CHECKING...</div>
+          </div>
+          <div class="signal-card" id="sig-highsev">
+            <div class="signal-icon">🔴</div>
+            <div class="signal-label">HIGH SEVERITY</div>
+            <div class="signal-status">CHECKING...</div>
+          </div>
+        </div>
+
+        <!-- FACTOR CARDS -->
+        <div class="factors-section anim-in anim-d3">
+          <div class="section-title">RISK FACTOR ANALYSIS</div>
+          <div class="factors-grid" id="factorsGrid"></div>
+        </div>
+
+        <!-- SHAP EXPLAINABILITY -->
+        <div class="anim-in anim-d4">
+          <div class="shap-panel">
+            <div class="shap-header-row">
+              <div class="section-title highlight-cyan" style="margin:0; border-bottom:none;">// SHAP EXPLAINABILITY - RISK SCORE BREAKDOWN</div>
+              <div class="shap-legend">
+                <span class="legend-item"><span class="legend-sq red"></span> INCREASES RISK</span>
+                <span class="legend-item"><span class="legend-sq green"></span> DECREASES RISK</span>
+              </div>
+            </div>
+            
+            <div class="shap-chart">
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">critical_norm</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 35%;">+35</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">recent_norm</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 30%;">+30</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">password_norm</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 25%;">+25</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">breach_count_norm</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 22%;">+22</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">severity_index</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 20%;">+20</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">dark_web_hits</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 18%;">+18</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">malware_combo</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 16%;">+16</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">identity_risk</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 15%;">+15</div></div>
+              </div>
+              <div class="shap-row">
+                <div class="shap-label highlight-cyan">Public Exposure Level</div>
+                <div class="shap-bar-container"><div class="shap-bar red" style="width: 14%;">+14</div></div>
+              </div>
+            </div>
+
+            <div class="shap-footer">
+              <div class="shap-footer-item">
+                <div class="shap-number highlight-cyan">42</div>
+                <div class="shap-footer-label highlight-cyan">BASE VALUE</div>
+              </div>
+              <div class="shap-footer-item right">
+                <div class="shap-number" style="color: var(--accent-red); text-shadow: 0 0 15px rgba(220, 38, 38, 0.6);">100</div>
+                <div class="shap-footer-label highlight-cyan">FINAL SCORE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BREACH TABLE + CHATBOT SIDE-BY-SIDE -->
+        <div class="breach-chat-layout anim-in anim-d5">
+          <!-- LEFT: Breach Database -->
+          <div class="breaches-section">
+            <div class="section-title">BREACH INTELLIGENCE DATABASE</div>
+            <div class="breach-controls">
+              <button class="breach-filter active" onclick="filterBreaches('all',this)">ALL</button>
+              <button class="breach-filter" onclick="filterBreaches('credential',this)">CREDENTIAL</button>
+              <button class="breach-filter" onclick="filterBreaches('email_only',this)">EMAIL ONLY</button>
+              <button class="breach-filter" onclick="filterBreaches('password',this)">PASSWORD INCLUDED</button>
+              <span class="breach-count-label" id="breachCountLabel"></span>
+              <input class="breach-search" id="breachSearch" placeholder="Search breach..."
+                oninput="searchBreaches(this.value)">
+            </div>
+            <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);overflow:hidden">
+              <div class="breach-log-header">// BREACH_LOG_RECORDS</div>
+              <div class="breach-table-wrap" style="border:none">
+                <table class="breach-table">
+                  <thead>
+                    <tr>
+                      <th>BREACH NAME</th>
+                      <th>DATE</th>
+                      <th>TYPE</th>
+                      <th>PASSWORD</th>
+                      <th>SEVERITY</th>
+                    </tr>
+                  </thead>
+                  <tbody id="breachTbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: ARIA AI Chat (Embedded) -->
+          <div class="inline-chat" id="embeddedAriaPanel">
+            <!-- Header -->
+            <div class="aria-header" style="flex-shrink:0">
+              <div class="aria-avatar">AI</div>
+              <div class="aria-title">
+                <h4>ARIA</h4>
+                <p>AI RISK INTELLIGENCE ADVISOR</p>
+              </div>
+            </div>
+            <!-- Context bar: shows after scan -->
+            <div class="aria-context-bar" id="ariaContextBarEmbed" style="display:none;flex-shrink:0">
+              <span>ACTIVE PROFILE:</span>
+              <span class="aria-score-badge" id="ariaScoreBadgeEmbed">—</span>
+              <span id="ariaRiskLabelEmbed" style="margin-left:auto;font-family:var(--font-display);font-size:10px;letter-spacing:2px;font-weight:700"></span>
+            </div>
+            <!-- Messages -->
+            <div class="aria-messages" id="ariaMessagesEmbed"></div>
+            <!-- Suggestion chips -->
+            <div class="aria-suggestions" id="ariaSuggestionsEmbed"></div>
+            <!-- Input -->
+            <div class="aria-input-row" style="padding:12px 14px;border-top:1px solid var(--border-dim);background:var(--bg-deep);flex-shrink:0">
+              <input id="ariaEmbedInput" type="text"
+                style="flex:1;background:var(--bg-panel);border:1px solid var(--border-dim);border-right:none;color:var(--text-primary);font-family:var(--font-mono);font-size:11px;padding:9px 12px;outline:none;transition:border-color 0.2s"
+                placeholder="Ask about your exposure..."
+                maxlength="1000"
+                onkeydown="if(event.key==='Enter') ariaEmbedSend()"
+              />
+              <button id="ariaEmbedSendBtn" onclick="ariaEmbedSend()"
+                style="background:var(--accent-cyan);border:none;padding:9px 16px;cursor:pointer;font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--bg-void);letter-spacing:2px;transition:all 0.2s">
+                SEND
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAW JSON -->
+        <div class="json-section anim-in anim-d6">
+          <div class="json-toggle" onclick="toggleJson()">
+            <span>// RAW API RESPONSE</span>
+            <span class="json-arrow" id="jsonArrow">▶</span>
+          </div>
+          <div class="json-body" id="jsonBody"></div>
+        </div>
+
+      </div><!-- /results -->
+    </div><!-- /wrapper -->
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="wrapper">
+        <div class="footer-inner">
+          <div class="footer-logo">BREACH INTEL · ULTIMATE EDITION · v3.0</div>
+          <div class="footer-stack">
+            <span class="stack-tag">HTML5</span>
+            <span class="stack-tag">NODE.JS</span>
+            <span class="stack-tag">PYTHON ML</span>
+            <span class="stack-tag">RANDOMFOREST</span>
+            <span class="stack-tag">SHAP XAI</span>
+            <span class="stack-tag">LEAKHUNTER AI</span>
+            <span class="stack-tag">XPOSEDORNOT</span>
+          </div>
+          <div class="footer-meta">MARCH 2026 · AI-POWERED THREAT INTELLIGENCE</div>
         </div>
       </div>
-    </div>
+    </footer>
 
-    <!-- SIGNALS -->
-    <div class="signals-grid anim-in anim-d2">
-      <div class="signal-card" id="sig-password">
-        <div class="signal-icon">🔑</div>
-        <div class="signal-label">PASSWORD EXPOSED</div>
-        <div class="signal-status">CHECKING...</div>
-      </div>
-      <div class="signal-card" id="sig-recent">
-        <div class="signal-icon">⚡</div>
-        <div class="signal-label">RECENT BREACH</div>
-        <div class="signal-status">CHECKING...</div>
-      </div>
-      <div class="signal-card" id="sig-multiple">
-        <div class="signal-icon">📊</div>
-        <div class="signal-label">MULTIPLE EXPOSURES</div>
-        <div class="signal-status">CHECKING...</div>
-      </div>
-      <div class="signal-card" id="sig-highsev">
-        <div class="signal-icon">🔴</div>
-        <div class="signal-label">HIGH SEVERITY</div>
-        <div class="signal-status">CHECKING...</div>
-      </div>
-    </div>
+  </div><!-- /dashboardView -->
 
-    <!-- FACTOR CARDS -->
-    <div class="factors-section anim-in anim-d3">
-      <div class="section-title">RISK FACTOR ANALYSIS</div>
-      <div class="factors-grid" id="factorsGrid"></div>
-    </div>
+  <script>
+    /* ===== LANDING PAGE → DASHBOARD TRANSITION ===== */
+    function enterDashboard() {
+      const landing = document.getElementById('landingPage');
+      const dashboard = document.getElementById('dashboardView');
 
-    <!-- ML PIPELINE -->
-    <div class="ml-section anim-in anim-d4">
-      <div class="section-title">ML PIPELINE</div>
-      <div class="pipeline-flow">
-        <div class="pipeline-step">
-          <div class="ps-icon">🌐</div>
-          <div class="ps-title">API LAYER</div>
-          <div class="ps-sub">LeakHunter AI<br>XposedOrNot</div>
-          <div class="ps-value" id="ps-apis">2 ACTIVE</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="ps-icon">⚙️</div>
-          <div class="ps-title">DATA PIPELINE</div>
-          <div class="ps-sub">log1p normalise<br>feature clamping</div>
-          <div class="ps-value" id="ps-features">9 FEATURES</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="ps-icon">🌲</div>
-          <div class="ps-title">RANDOMFOREST</div>
-          <div class="ps-sub">200 trees<br>IsolationForest</div>
-          <div class="ps-value" id="ps-model">SCORING</div>
-        </div>
-        <div class="pipeline-step">
-          <div class="ps-icon">🧠</div>
-          <div class="ps-title">SHAP XAI</div>
-          <div class="ps-sub">TreeExplainer<br>factor attribution</div>
-          <div class="ps-value" id="ps-shap">EXPLAINED</div>
-        </div>
-      </div>
-    </div>
+      // Start exit animation on landing
+      landing.classList.add('exit');
 
-    <!-- SHAP -->
-    <div class="shap-section anim-in anim-d4">
-      <div class="section-title">EXPLAINABLE AI — SHAP FACTOR CONTRIBUTION</div>
-      <div class="shap-bars" id="shapBars"></div>
-    </div>
-
-    <!-- BREACH TABLE -->
-    <div class="breaches-section anim-in anim-d5">
-      <div class="section-title">BREACH INTELLIGENCE DATABASE</div>
-      <div class="breach-controls">
-        <button class="breach-filter active" onclick="filterBreaches('all',this)">ALL</button>
-        <button class="breach-filter" onclick="filterBreaches('credential',this)">CREDENTIAL</button>
-        <button class="breach-filter" onclick="filterBreaches('email_only',this)">EMAIL ONLY</button>
-        <button class="breach-filter" onclick="filterBreaches('password',this)">PASSWORD INCLUDED</button>
-        <span class="breach-count-label" id="breachCountLabel"></span>
-        <input class="breach-search" id="breachSearch" placeholder="Search breach..." oninput="searchBreaches(this.value)">
-      </div>
-      <div class="breach-table-wrap">
-        <table class="breach-table">
-          <thead>
-            <tr>
-              <th>BREACH NAME</th>
-              <th>DATE</th>
-              <th>TYPE</th>
-              <th>PASSWORD</th>
-              <th>SEVERITY</th>
-            </tr>
-          </thead>
-          <tbody id="breachTbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- REMEDIATION -->
-    <div class="remediation-section anim-in anim-d5">
-      <div class="section-title">PERSONALISED REMEDIATION PLAN</div>
-      <div class="remediation-grid" id="remediationGrid"></div>
-    </div>
-
-    <!-- API COVERAGE -->
-    <div class="coverage-section anim-in anim-d6">
-      <div class="section-title">API COVERAGE STATUS</div>
-      <div class="coverage-grid" id="coverageGrid"></div>
-    </div>
-
-    <!-- RAW JSON -->
-    <div class="json-section anim-in anim-d6">
-      <div class="json-toggle" onclick="toggleJson()">
-        <span>// RAW API RESPONSE</span>
-        <span class="json-arrow" id="jsonArrow">▶</span>
-      </div>
-      <div class="json-body" id="jsonBody"></div>
-    </div>
-
-  </div><!-- /results -->
-</div><!-- /wrapper -->
-
-<!-- FOOTER -->
-<footer>
-  <div class="wrapper">
-    <div class="footer-inner">
-      <div class="footer-logo">BREACH INTEL · ULTIMATE EDITION · v3.0</div>
-      <div class="footer-stack">
-        <span class="stack-tag">HTML5</span>
-        <span class="stack-tag">NODE.JS</span>
-        <span class="stack-tag">PYTHON ML</span>
-        <span class="stack-tag">RANDOMFOREST</span>
-        <span class="stack-tag">SHAP XAI</span>
-        <span class="stack-tag">LEAKHUNTER AI</span>
-        <span class="stack-tag">XPOSEDORNOT</span>
-      </div>
-      <div class="footer-meta">MARCH 2026 · AI-POWERED THREAT INTELLIGENCE</div>
-    </div>
-  </div>
-</footer>
-
-<script>
-  /* ===== ARIA CHAT STATE ===== */
-let ariaContext  = null;   // set after scan completes
-let ariaHistory  = [];     // {role, text}[]
-let ariaOpen     = false;
-let ariaGreeted  = false;
- 
-/* ===== ARIA HELPERS ===== */
-function toggleAriaPanel() {
-  ariaOpen = !ariaOpen;
-  const panel = document.getElementById('ariaPanel');
-  panel.classList.toggle('open', ariaOpen);
-  document.getElementById('ariaBtn').classList.remove('has-notify');
- 
-  if (ariaOpen && !ariaGreeted) {
-    ariaGreeted = true;
-    if (!ariaContext) {
-      ariaShowNoScan();
-    } else {
-      ariaShowGreeting();
+      // After exit animation, show dashboard
+      setTimeout(() => {
+        landing.style.display = 'none';
+        dashboard.style.display = 'block';
+        // Trigger reflow then animate in
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            dashboard.classList.add('visible');
+          });
+        });
+        // Focus the email input
+        setTimeout(() => {
+          const emailInput = document.getElementById('emailInput');
+          if (emailInput) emailInput.focus();
+        }, 400);
+      }, 800);
     }
-  }
-  if (ariaOpen) document.getElementById('ariaMsgInput').focus();
-}
- 
-function ariaShowNoScan() {
-  const msgs = document.getElementById('ariaMessages');
-  msgs.innerHTML = `
+
+    /* ===== HAND-GLOW MOUSE TRACKING ===== */
+    (function () {
+      const handGlow = document.getElementById('handGlow');
+      if (!handGlow) return;
+
+      // Hover effect disabled for handGlow
+
+      // Show hand-glow on landing page
+      const landing = document.getElementById('landingPage');
+      if (landing) {
+        landing.addEventListener('mouseenter', () => handGlow.classList.add('active'));
+        landing.addEventListener('mouseleave', () => handGlow.classList.remove('active'));
+        // Initially active
+        handGlow.classList.add('active');
+      }
+    })();
+
+    /* ===== ARIA CHAT STATE ===== */
+    let ariaContext = null;   // set after scan completes
+    let ariaHistory = [];     // {role, text}[]
+    let ariaOpen = false;
+    let ariaGreeted = false;
+
+    /* ===== ARIA HELPERS ===== */
+    function toggleAriaPanel() {
+      ariaOpen = !ariaOpen;
+      const panel = document.getElementById('ariaPanel');
+      panel.classList.toggle('open', ariaOpen);
+      document.getElementById('ariaBtn').classList.remove('has-notify');
+
+      if (ariaOpen && !ariaGreeted) {
+        ariaGreeted = true;
+        if (!ariaContext) {
+          ariaShowNoScan();
+        } else {
+          ariaShowGreeting();
+        }
+      }
+      if (ariaOpen) document.getElementById('ariaMsgInput').focus();
+    }
+
+    function ariaShowNoScan() {
+      const msgs = document.getElementById('ariaMessages');
+      msgs.innerHTML = `
     <div class="aria-no-scan">
       <div style="font-size:32px">🔍</div>
       <p>Run a breach scan first — then I can give you personalized security advice based on your actual exposure data.</p>
     </div>`;
-  document.getElementById('ariaSuggestions').innerHTML = '';
-}
- 
-function ariaShowGreeting() {
-  const score = ariaContext.score;
-  let greeting;
-  if (score === 0) {
-    greeting = `Good news — your scan shows NO exposure in our databases. Your digital footprint looks clean right now. Want tips on staying that way?`;
-  } else if (score < 25) {
-    greeting = `Your risk score is **${score}/100** (LOW RISK). You have ${ariaContext.breachCount} breach(es) on record, but the impact is limited. I can walk you through exactly what to do.`;
-  } else if (score < 50) {
-    greeting = `Your risk score is **${score}/100** (MEDIUM). You have ${ariaContext.breachCount} breaches with ${ariaContext.passwordLeaks} password leak(s). There are specific steps you should take — ask me where to start.`;
-  } else if (score < 75) {
-    greeting = `⚠️ Your risk score is **${score}/100** (HIGH RISK). With ${ariaContext.breachCount} breaches and ${ariaContext.passwordLeaks} exposed passwords, you need to act now. Ask me for a priority action list.`;
-  } else {
-    greeting = `🚨 Your risk score is **${score}/100** (CRITICAL). This is serious — ${ariaContext.breachCount} breaches including ${ariaContext.criticalCount} critical ones. I'll guide you through emergency steps.`;
-  }
-  ariaAppendMessage('bot', greeting);
-  ariaSetSuggestions(score);
-}
- 
-function ariaSetSuggestions(score) {
-  const base = ['What should I do first?', 'How do I change my passwords?', 'What is 2FA?'];
-  const byRisk = score === 0
-    ? ['How do I stay protected?', 'Should I use a VPN?', 'Best password manager?']
-    : score < 50
-    ? ['Which accounts are at risk?', 'How bad is this breach?', 'Do I need 2FA?']
-    : ['Emergency steps?', 'Is my bank account safe?', 'Should I freeze my credit?'];
- 
-  const chips = [...base.slice(0,1), ...byRisk].slice(0, 4);
-  const row = document.getElementById('ariaSuggestions');
-  row.innerHTML = chips
-    .map(c => `<button class="aria-chip" onclick="ariaQuickSend('${c}')">${c}</button>`)
-    .join('');
-}
- 
-function ariaAppendMessage(role, text) {
-  const msgs = document.getElementById('ariaMessages');
- 
-  // Remove no-scan placeholder
-  const noScan = msgs.querySelector('.aria-no-scan');
-  if (noScan) noScan.remove();
- 
-  // Format markdown-lite: **bold**, bullet points
-  const formatted = text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^[-•]\s(.+)$/gm, '<li>$1</li>')
-    .replace(/<li>/g, '<li style="margin-left:12px;list-style:disc">');
- 
-  const div = document.createElement('div');
-  div.className = `aria-msg ${role}`;
-  div.innerHTML = `
+      document.getElementById('ariaSuggestions').innerHTML = '';
+    }
+
+    function ariaShowGreeting() {
+      const score = ariaContext.score;
+      let greeting;
+      if (score === 0) {
+        greeting = `Good news — your scan shows NO exposure in our databases. Your digital footprint looks clean right now. Want tips on staying that way?`;
+      } else if (score < 25) {
+        greeting = `Your risk score is **${score}/100** (LOW RISK). You have ${ariaContext.breachCount} breach(es) on record, but the impact is limited. I can walk you through exactly what to do.`;
+      } else if (score < 50) {
+        greeting = `Your risk score is **${score}/100** (MEDIUM). You have ${ariaContext.breachCount} breaches with ${ariaContext.passwordLeaks} password leak(s). There are specific steps you should take — ask me where to start.`;
+      } else if (score < 75) {
+        greeting = `⚠️ Your risk score is **${score}/100** (HIGH RISK). With ${ariaContext.breachCount} breaches and ${ariaContext.passwordLeaks} exposed passwords, you need to act now. Ask me for a priority action list.`;
+      } else {
+        greeting = `🚨 Your risk score is **${score}/100** (CRITICAL). This is serious — ${ariaContext.breachCount} breaches including ${ariaContext.criticalCount} critical ones. I'll guide you through emergency steps.`;
+      }
+      ariaAppendMessage('bot', greeting);
+      ariaSetSuggestions(score);
+    }
+
+    function ariaSetSuggestions(score) {
+      const base = ['What should I do first?', 'How do I change my passwords?', 'What is 2FA?'];
+      const byRisk = score === 0
+        ? ['How do I stay protected?', 'Should I use a VPN?', 'Best password manager?']
+        : score < 50
+          ? ['Which accounts are at risk?', 'How bad is this breach?', 'Do I need 2FA?']
+          : ['Emergency steps?', 'Is my bank account safe?', 'Should I freeze my credit?'];
+
+      const chips = [...base.slice(0, 1), ...byRisk].slice(0, 4);
+      const row = document.getElementById('ariaSuggestions');
+      row.innerHTML = chips
+        .map(c => `<button class="aria-chip" onclick="ariaQuickSend('${c}')">${c}</button>`)
+        .join('');
+    }
+
+    function ariaAppendMessage(role, text) {
+      const msgs = document.getElementById('ariaMessages');
+
+      // Remove no-scan placeholder
+      const noScan = msgs.querySelector('.aria-no-scan');
+      if (noScan) noScan.remove();
+
+      // Format markdown-lite: **bold**, bullet points
+      const formatted = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^[-•]\s(.+)$/gm, '<li>$1</li>')
+        .replace(/<li>/g, '<li style="margin-left:12px;list-style:disc">');
+
+      const div = document.createElement('div');
+      div.className = `aria-msg ${role}`;
+      div.innerHTML = `
     <div class="aria-msg-avatar">${role === 'bot' ? 'AI' : 'YOU'}</div>
     <div class="aria-bubble">${formatted}</div>
   `;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
- 
-function ariaShowTyping() {
-  const msgs = document.getElementById('ariaMessages');
-  const div = document.createElement('div');
-  div.className = 'aria-msg bot'; div.id = 'ariaTyping';
-  div.innerHTML = `
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function ariaShowTyping() {
+      const msgs = document.getElementById('ariaMessages');
+      const div = document.createElement('div');
+      div.className = 'aria-msg bot'; div.id = 'ariaTyping';
+      div.innerHTML = `
     <div class="aria-msg-avatar">AI</div>
     <div class="aria-bubble">
       <div class="aria-typing"><span></span><span></span><span></span></div>
     </div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
- 
-function ariaRemoveTyping() {
-  const t = document.getElementById('ariaTyping');
-  if (t) t.remove();
-}
- 
-function ariaUpdateContextBar(score, riskLevel) {
-  const bar  = document.getElementById('ariaContextBar');
-  const badge = document.getElementById('ariaScoreBadge');
-  const label = document.getElementById('ariaRiskLabel');
-  const color = score === 0 ? 'var(--accent-green)'
-    : score >= 75 ? 'var(--risk-critical)'
-    : score >= 50 ? 'var(--risk-high)'
-    : score >= 25 ? 'var(--risk-medium)'
-    : 'var(--risk-low)';
-  badge.textContent  = `${score}/100`;
-  badge.style.color  = color;
-  label.textContent  = riskLevel;
-  label.style.color  = color;
-  bar.style.display  = 'flex';
-}
- 
-async function ariaSend() {
-  const input = document.getElementById('ariaMsgInput');
-  const msg   = input.value.trim();
-  if (!msg) return;
- 
-  if (!ariaContext) {
-    ariaAppendMessage('bot', 'Please run a breach scan first so I can give you personalised advice.');
-    return;
-  }
- 
-  input.value = '';
-  document.getElementById('ariaSendBtn').disabled = true;
-  document.getElementById('ariaSuggestions').innerHTML = '';
- 
-  ariaAppendMessage('user', msg);
-  ariaHistory.push({ role: 'user', text: msg });
- 
-  ariaShowTyping();
- 
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: msg,
-        context: ariaContext,
-        history: ariaHistory.slice(-10),
-      }),
-    });
-    const data = await res.json();
-    ariaRemoveTyping();
- 
-    if (!res.ok) throw new Error(data.error || 'Chat service error');
- 
-    ariaAppendMessage('bot', data.reply);
-    ariaHistory.push({ role: 'model', text: data.reply });
-    ariaSetSuggestions(ariaContext.score);
- 
-  } catch (err) {
-    ariaRemoveTyping();
-    ariaAppendMessage('bot', `Error: ${err.message}. Check that GEMINI_API_KEY is set in your .env file.`);
-  } finally {
-    document.getElementById('ariaSendBtn').disabled = false;
-    input.focus();
-  }
-}
- 
-function ariaQuickSend(text) {
-  document.getElementById('ariaMsgInput').value = text;
-  ariaSend();
-}
- 
-/* ===== CALLED FROM renderResults() — set context after scan ===== */
-function setAriaContext(data) {
-  const ml  = data.ml  || {};
-  const lh  = data.leakhunter  || {};
-  const xon = data.xposedornot || {};
- 
-  ariaContext = {
-    score:          ml.finalScore   || 0,
-    riskLevel:      ml.riskLevel    || 'UNKNOWN',
-    breachCount:    ml.meta?.breachCount    || 0,
-    passwordLeaks:  ml.meta?.passwordLeaks  || 0,
-    avgSeverity:    ml.meta?.avgSeverity    || 0,
-    criticalCount:  ml.meta?.criticalCount  || 0,
-    recentBreaches: ml.meta?.recentBreaches || 0,
-    breachNames: [
-      ...(lh.exposures  || []).map(e => e.name),
-      ...(xon.breachNames || []),
-    ].filter((v, i, arr) => arr.indexOf(v) === i),  // deduplicate
-  };
- 
-  ariaUpdateContextBar(ariaContext.score, ariaContext.riskLevel);
- 
-  // Reset chat for new scan
-  ariaHistory  = [];
-  ariaGreeted  = false;
-  document.getElementById('ariaMessages').innerHTML = '';
-  document.getElementById('ariaSuggestions').innerHTML = '';
- 
-  // Notify user if panel is closed
-  if (!ariaOpen) {
-    document.getElementById('ariaBtn').classList.add('has-notify');
-  } else {
-    ariaShowGreeting();
-    ariaGreeted = true;
-  }
-}
- 
-/* ===== STATE ===== */
-let allBreaches = [];
-let currentFilter = 'all';
-let currentSearch = '';
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
 
-/* ===== HELPERS ===== */
-function setDemo(email) {
-  document.getElementById('emailInput').value = email;
-  document.getElementById('emailInput').focus();
-}
+    function ariaRemoveTyping() {
+      const t = document.getElementById('ariaTyping');
+      if (t) t.remove();
+    }
 
-function getRiskColor(score) {
-  if (score === 0)  return 'var(--accent-green)';
-  if (score >= 75) return 'var(--risk-critical)';
-  if (score >= 50) return 'var(--risk-high)';
-  if (score >= 25) return 'var(--risk-medium)';
-  return 'var(--risk-low)';
-}
-function getRiskLabel(score, override) {
-  if (override) return override;
-  if (score === 0)  return 'NO EXPOSURE';
-  if (score >= 75) return 'CRITICAL';
-  if (score >= 50) return 'HIGH RISK';
-  if (score >= 25) return 'MEDIUM';
-  return 'LOW RISK';
-}
-function getSevClass(sev) {
-  if (sev >= 9) return 'sev-critical';
-  if (sev >= 7) return 'sev-high';
-  if (sev >= 5) return 'sev-medium';
-  return 'sev-low';
-}
-function getSevLabel(sev) {
-  if (sev >= 9) return 'CRITICAL';
-  if (sev >= 7) return 'HIGH';
-  if (sev >= 5) return 'MEDIUM';
-  return 'LOW';
-}
-function formatDate(d) {
-  if (!d) return '—';
-  return d.substring(0, 7);
-}
+    function ariaUpdateContextBar(score, riskLevel) {
+      const bar = document.getElementById('ariaContextBar');
+      const badge = document.getElementById('ariaScoreBadge');
+      const label = document.getElementById('ariaRiskLabel');
+      const color = score === 0 ? 'var(--accent-green)'
+        : score >= 75 ? 'var(--risk-critical)'
+          : score >= 50 ? 'var(--risk-high)'
+            : score >= 25 ? 'var(--risk-medium)'
+              : 'var(--risk-low)';
+      badge.textContent = `${score}/100`;
+      badge.style.color = color;
+      label.textContent = riskLevel;
+      label.style.color = color;
+      bar.style.display = 'flex';
+    }
 
-/* ===== TERMINAL ===== */
-async function termPrint(text, cls='term-info', delay=400) {
-  return new Promise(res => {
-    setTimeout(() => {
-      const line = document.createElement('div');
-      line.className = `term-line ${cls}`;
-      line.innerHTML = text;
-      document.getElementById('termLines').appendChild(line);
-      requestAnimationFrame(() => { line.classList.add('show'); });
-      res();
-    }, delay);
-  });
-}
+    async function ariaSend() {
+      const input = document.getElementById('ariaMsgInput');
+      const msg = input.value.trim();
+      if (!msg) return;
 
-async function runTerminal(email) {
-  const t = document.getElementById('terminal');
-  document.getElementById('termLines').innerHTML = '';
-  t.style.display = 'block';
-  await termPrint(`<span class="term-prompt">$</span> breach-intel --scan ${email}`, 'term-info', 0);
-  await termPrint(`<span class="term-ok">[OK]</span> Initialising ML pipeline...`, 'term-ok', 300);
-  await termPrint(`<span class="term-ok">[OK]</span> Loading RandomForest model (200 trees)...`, 'term-ok', 600);
-  await termPrint(`<span class="term-info">[→]</span> Querying XposedOrNot API...`, 'term-info', 900);
-  await termPrint(`<span class="term-info">[→]</span> Querying LeakHunter AI (RapidAPI)...`, 'term-info', 1100);
-  await termPrint(`<span class="term-ok">[OK]</span> Merging API results...`, 'term-ok', 1600);
-  await termPrint(`<span class="term-ok">[OK]</span> Running data_pipeline.py — log1p normalisation...`, 'term-ok', 2000);
-  await termPrint(`<span class="term-ok">[OK]</span> Running model.py — RF + IsolationForest scoring...`, 'term-ok', 2400);
-  await termPrint(`<span class="term-ok">[OK]</span> Computing SHAP TreeExplainer values...`, 'term-ok', 2800);
-  await termPrint(`<span class="term-ok">[DONE]</span> Risk assessment complete. <span class="term-cursor"></span>`, 'term-ok', 3200);
-}
+      if (!ariaContext) {
+        ariaAppendMessage('bot', 'Please run a breach scan first so I can give you personalised advice.');
+        return;
+      }
 
-/* ===== ML SIMULATION ===== */
-function simulateMLPipeline(lhData, xonData) {
-  // Extract features from LeakHunter AI response
-  const exposures = lhData.exposures || [];
-  const signals = lhData.signals || {};
+      input.value = '';
+      document.getElementById('ariaSendBtn').disabled = true;
+      document.getElementById('ariaSuggestions').innerHTML = '';
 
-  const breachCount = lhData.exposureCount || exposures.length || 0;
-  const passwordLeaks = exposures.filter(e => e.passwordIncluded).length;
-  const avgSeverity = exposures.length > 0
-    ? exposures.reduce((s, e) => s + (e.severity || 5), 0) / exposures.length
-    : 0;
-  const maxSeverity = exposures.length > 0
-    ? Math.max(...exposures.map(e => e.severity || 0))
-    : 0;
-  const criticalCount = exposures.filter(e => e.severity >= 9).length;
-  const recentBreaches = exposures.filter(e => {
-    const y = parseInt((e.date || '').substring(0,4));
-    return y >= 2020;
-  }).length;
+      ariaAppendMessage('user', msg);
+      ariaHistory.push({ role: 'user', text: msg });
 
-  // XON additional signals
-  const xonBreachCount = xonData ? (xonData.breachCount || 0) : 0;
-  const mergedBreachCount = Math.max(breachCount, xonBreachCount);
+      ariaShowTyping();
 
-  // log1p normalisation (data_pipeline.py equivalent)
-  const log1p = x => Math.log(1 + x);
-  const breachNorm = log1p(mergedBreachCount) / log1p(200);
-  const passwordNorm = log1p(passwordLeaks) / log1p(100);
-  const severityNorm = avgSeverity / 10;
-  const criticalNorm = log1p(criticalCount) / log1p(50);
-  const recentNorm = log1p(recentBreaches) / log1p(30);
-  const loginAnomalyScore = signals.recentBreach ? 0.7 : 0.2;
-  const publicExposure = Math.min(breachNorm * 1.2, 1);
-  const socialRiskScore = signals.multipleExposures ? 0.65 : 0.3;
-  const hasPasswordBreach = signals.passwordExposed ? 1 : 0;
-  const dangerComposite = (breachNorm * 0.3 + passwordNorm * 0.25 + criticalNorm * 0.25 + severityNorm * 0.2);
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: msg,
+            context: ariaContext,
+            history: ariaHistory.slice(-10),
+          }),
+        });
+        const data = await res.json();
+        ariaRemoveTyping();
 
-  // RandomForest scoring simulation
-  // p_low × 18 + p_medium × 52 + p_high × 86 + IsolationForest boost
-  let pHigh = Math.min(dangerComposite * 1.1, 1);
-  let pLow = Math.max(1 - pHigh - 0.15, 0);
-  let pMed = 1 - pHigh - pLow;
+        if (!res.ok) throw new Error(data.error || 'Chat service error');
 
-  let rfScore = pLow * 18 + pMed * 52 + pHigh * 86;
+        ariaAppendMessage('bot', data.reply);
+        ariaHistory.push({ role: 'model', text: data.reply });
+        ariaSetSuggestions(ariaContext.score);
 
-  // IsolationForest anomaly boost
-  let anomalyBoost = 0;
-  if (maxSeverity >= 10) anomalyBoost += 8;
-  if (criticalCount > 10) anomalyBoost += 5;
-  if (signals.highSeverityBreach) anomalyBoost += 4;
+      } catch (err) {
+        ariaRemoveTyping();
+        ariaAppendMessage('bot', `Error: ${err.message}. Check that GEMINI_API_KEY is set in your .env file.`);
+      } finally {
+        document.getElementById('ariaSendBtn').disabled = false;
+        input.focus();
+      }
+    }
 
-  const finalScore = Math.min(Math.round(rfScore + anomalyBoost), 100);
+    function ariaQuickSend(text) {
+      document.getElementById('ariaMsgInput').value = text;
+      ariaSend();
+    }
 
-  // Factor scores (0-10)
-  const factors = [
-    { icon: '🔑', name: 'PASSWORD LEAKS', score: Math.min(Math.round(passwordNorm * 10), 10), barColor: 'var(--accent-red)' },
-    { icon: '💀', name: 'BREACH SEVERITY', score: Math.min(Math.round(severityNorm * 10), 10), barColor: 'var(--accent-orange)' },
-    { icon: '🔁', name: 'EXPOSURE COUNT', score: Math.min(Math.round(breachNorm * 10), 10), barColor: 'var(--accent-yellow)' },
-    { icon: '⚡', name: 'RECENT BREACHES', score: Math.min(Math.round(recentNorm * 10), 10), barColor: 'var(--accent-cyan)' },
-    { icon: '🌐', name: 'PUBLIC EXPOSURE', score: Math.min(Math.round(publicExposure * 10), 10), barColor: 'var(--accent-blue)' },
-  ];
+    /* ===== CALLED FROM renderResults() — set context after scan ===== */
+    function setAriaContext(data) {
+      const ml = data.ml || {};
+      const lh = data.leakhunter || {};
+      const xon = data.xposedornot || {};
 
-  // SHAP values
-  const shapFactors = [
-    { label: 'has_password_breach', pts: Math.round(hasPasswordBreach * 28 + passwordNorm * 10), pct: Math.round(hasPasswordBreach * 70 + passwordNorm * 25) },
-    { label: 'breach_severity_score', pts: Math.round(severityNorm * 22 + criticalNorm * 8), pct: Math.round(severityNorm * 60 + criticalNorm * 20) },
-    { label: 'breach_norm (log1p)', pts: Math.round(breachNorm * 18), pct: Math.round(breachNorm * 50) },
-    { label: 'login_anomaly_score', pts: Math.round(loginAnomalyScore * 15), pct: Math.round(loginAnomalyScore * 40) },
-    { label: 'danger_composite', pts: Math.round(dangerComposite * 12), pct: Math.round(dangerComposite * 35) },
-    { label: 'public_exposure', pts: Math.round(publicExposure * 8), pct: Math.round(publicExposure * 25) },
-    { label: 'social_risk_score', pts: Math.round(socialRiskScore * 6), pct: Math.round(socialRiskScore * 20) },
-    { label: 'recent_breach_norm', pts: Math.round(recentNorm * 10), pct: Math.round(recentNorm * 30) },
-    { label: 'password_norm (log1p)', pts: Math.round(passwordNorm * 14), pct: Math.round(passwordNorm * 40) },
-  ].sort((a,b) => b.pts - a.pts);
+      ariaContext = {
+        score: ml.finalScore || 0,
+        riskLevel: ml.riskLevel || 'UNKNOWN',
+        breachCount: ml.meta?.breachCount || 0,
+        passwordLeaks: ml.meta?.passwordLeaks || 0,
+        avgSeverity: ml.meta?.avgSeverity || 0,
+        criticalCount: ml.meta?.criticalCount || 0,
+        recentBreaches: ml.meta?.recentBreaches || 0,
+        breachNames: [
+          ...(lh.exposures || []).map(e => e.name),
+          ...(xon.breachNames || []),
+        ].filter((v, i, arr) => arr.indexOf(v) === i),  // deduplicate
+      };
 
-  return {
-    finalScore,
-    riskLevel: getRiskLabel(finalScore),
-    factors,
-    shapFactors,
-    features: { breachNorm, passwordNorm, severityNorm, criticalNorm, recentNorm, loginAnomalyScore, publicExposure, socialRiskScore, hasPasswordBreach, dangerComposite },
-    meta: { breachCount: mergedBreachCount, passwordLeaks, avgSeverity: avgSeverity.toFixed(1), criticalCount, recentBreaches }
-  };
-}
+      ariaUpdateContextBar(ariaContext.score, ariaContext.riskLevel);
 
-/* ===== RENDER FUNCTIONS ===== */
-function renderGauge(score, riskLevelOverride) {
-  const color = getRiskColor(score);
-  const circ = 502.65;
-  const offset = score === 0 ? circ : circ - (score / 100) * circ;
+      // Reset chat for new scan
+      ariaHistory = [];
+      ariaGreeted = false;
+      document.getElementById('ariaMessages').innerHTML = '';
+      document.getElementById('ariaSuggestions').innerHTML = '';
 
-  const fill = document.getElementById('gaugeFill');
-  const glow = document.getElementById('gaugeGlow');
-  const scoreEl = document.getElementById('gaugeScore');
-  const riskEl = document.getElementById('gaugeRisk');
+      // Notify user if panel is closed
+      if (!ariaOpen) {
+        document.getElementById('ariaBtn').classList.add('has-notify');
+      } else {
+        ariaShowGreeting();
+        ariaGreeted = true;
+      }
+    }
 
-  fill.style.stroke = color;
-  fill.style.strokeDashoffset = offset;
-  glow.style.stroke = color;
-  glow.style.strokeDashoffset = offset;
-  scoreEl.style.color = color;
-  riskEl.style.color = color;
-  riskEl.textContent = getRiskLabel(score, riskLevelOverride);
+    /* ===== STATE ===== */
+    let allBreaches = [];
+    let currentFilter = 'all';
+    let currentSearch = '';
 
-  if (score === 0) {
-    scoreEl.textContent = '0';
-    return;
-  }
-  let current = 0;
-  const step = score / 60;
-  const timer = setInterval(() => {
-    current = Math.min(current + step, score);
-    scoreEl.textContent = Math.round(current);
-    if (current >= score) clearInterval(timer);
-  }, 30);
-}
+    /* ===== HELPERS ===== */
+    function setDemo(email) {
+      document.getElementById('emailInput').value = email;
+      document.getElementById('emailInput').focus();
+    }
 
-function renderSignals(signals) {
-  const map = {
-    'sig-password': { key: 'passwordExposed', label: 'EXPOSED' },
-    'sig-recent': { key: 'recentBreach', label: 'DETECTED' },
-    'sig-multiple': { key: 'multipleExposures', label: 'CONFIRMED' },
-    'sig-highsev': { key: 'highSeverityBreach', label: 'PRESENT' },
-  };
-  Object.entries(map).forEach(([id, cfg]) => {
-    const el = document.getElementById(id);
-    const active = signals[cfg.key];
-    el.className = `signal-card ${active ? 'active' : 'inactive'}`;
-    el.querySelector('.signal-status').textContent = active ? cfg.label : 'NONE';
-  });
-}
+    function getRiskColor(score) {
+      if (score === 0) return 'var(--accent-green)';
+      if (score >= 75) return 'var(--risk-critical)';
+      if (score >= 50) return 'var(--risk-high)';
+      if (score >= 25) return 'var(--risk-medium)';
+      return 'var(--risk-low)';
+    }
+    function getRiskLabel(score, override) {
+      if (override) return override;
+      if (score === 0) return 'NO EXPOSURE';
+      if (score >= 75) return 'CRITICAL';
+      if (score >= 50) return 'HIGH RISK';
+      if (score >= 25) return 'MEDIUM';
+      return 'LOW RISK';
+    }
+    function getSevClass(sev) {
+      if (sev >= 9) return 'sev-critical';
+      if (sev >= 7) return 'sev-high';
+      if (sev >= 5) return 'sev-medium';
+      return 'sev-low';
+    }
+    function getSevLabel(sev) {
+      if (sev >= 9) return 'CRITICAL';
+      if (sev >= 7) return 'HIGH';
+      if (sev >= 5) return 'MEDIUM';
+      return 'LOW';
+    }
+    function formatDate(d) {
+      if (!d) return '—';
+      return d.substring(0, 7);
+    }
 
-function renderFactors(factors) {
-  const grid = document.getElementById('factorsGrid');
-  grid.innerHTML = '';
-  factors.forEach(f => {
-    const pct = (f.score / 10) * 100;
-    const card = document.createElement('div');
-    card.className = 'factor-card';
-    card.innerHTML = `
+    /* ===== TERMINAL ===== */
+    async function termPrint(text, cls = 'term-info', delay = 400) {
+      return new Promise(res => {
+        setTimeout(() => {
+          const line = document.createElement('div');
+          line.className = `term-line ${cls}`;
+          line.innerHTML = text;
+          document.getElementById('termLines').appendChild(line);
+          requestAnimationFrame(() => { line.classList.add('show'); });
+          res();
+        }, delay);
+      });
+    }
+
+    async function runTerminal(email) {
+      const t = document.getElementById('terminal');
+      document.getElementById('termLines').innerHTML = '';
+      t.style.display = 'block';
+      await termPrint(`<span class="term-prompt">$</span> breach-intel --scan ${email}`, 'term-info', 0);
+      await termPrint(`<span class="term-ok">[OK]</span> Initialising ML pipeline...`, 'term-ok', 300);
+      await termPrint(`<span class="term-ok">[OK]</span> Loading RandomForest model (200 trees)...`, 'term-ok', 600);
+      await termPrint(`<span class="term-info">[→]</span> Querying XposedOrNot API...`, 'term-info', 900);
+      await termPrint(`<span class="term-info">[→]</span> Querying LeakHunter AI (RapidAPI)...`, 'term-info', 1100);
+      await termPrint(`<span class="term-ok">[OK]</span> Merging API results...`, 'term-ok', 1600);
+      await termPrint(`<span class="term-ok">[OK]</span> Running data_pipeline.py — log1p normalisation...`, 'term-ok', 2000);
+      await termPrint(`<span class="term-ok">[OK]</span> Running model.py — RF + IsolationForest scoring...`, 'term-ok', 2400);
+      await termPrint(`<span class="term-ok">[OK]</span> Computing SHAP TreeExplainer values...`, 'term-ok', 2800);
+      await termPrint(`<span class="term-ok">[DONE]</span> Risk assessment complete. <span class="term-cursor"></span>`, 'term-ok', 3200);
+    }
+
+    /* ===== ML SIMULATION ===== */
+    function simulateMLPipeline(lhData, xonData) {
+      // Extract features from LeakHunter AI response
+      const exposures = lhData.exposures || [];
+      const signals = lhData.signals || {};
+
+      const breachCount = lhData.exposureCount || exposures.length || 0;
+      const passwordLeaks = exposures.filter(e => e.passwordIncluded).length;
+      const avgSeverity = exposures.length > 0
+        ? exposures.reduce((s, e) => s + (e.severity || 5), 0) / exposures.length
+        : 0;
+      const maxSeverity = exposures.length > 0
+        ? Math.max(...exposures.map(e => e.severity || 0))
+        : 0;
+      const criticalCount = exposures.filter(e => e.severity >= 9).length;
+      const recentBreaches = exposures.filter(e => {
+        const y = parseInt((e.date || '').substring(0, 4));
+        return y >= 2020;
+      }).length;
+
+      // XON additional signals
+      const xonBreachCount = xonData ? (xonData.breachCount || 0) : 0;
+      const mergedBreachCount = Math.max(breachCount, xonBreachCount);
+
+      // log1p normalisation (data_pipeline.py equivalent)
+      const log1p = x => Math.log(1 + x);
+      const breachNorm = log1p(mergedBreachCount) / log1p(200);
+      const passwordNorm = log1p(passwordLeaks) / log1p(100);
+      const severityNorm = avgSeverity / 10;
+      const criticalNorm = log1p(criticalCount) / log1p(50);
+      const recentNorm = log1p(recentBreaches) / log1p(30);
+      const loginAnomalyScore = signals.recentBreach ? 0.7 : 0.2;
+      const publicExposure = Math.min(breachNorm * 1.2, 1);
+      const socialRiskScore = signals.multipleExposures ? 0.65 : 0.3;
+      const hasPasswordBreach = signals.passwordExposed ? 1 : 0;
+      const dangerComposite = (breachNorm * 0.3 + passwordNorm * 0.25 + criticalNorm * 0.25 + severityNorm * 0.2);
+
+      // RandomForest scoring simulation
+      // p_low × 18 + p_medium × 52 + p_high × 86 + IsolationForest boost
+      let pHigh = Math.min(dangerComposite * 1.1, 1);
+      let pLow = Math.max(1 - pHigh - 0.15, 0);
+      let pMed = 1 - pHigh - pLow;
+
+      let rfScore = pLow * 18 + pMed * 52 + pHigh * 86;
+
+      // IsolationForest anomaly boost
+      let anomalyBoost = 0;
+      if (maxSeverity >= 10) anomalyBoost += 8;
+      if (criticalCount > 10) anomalyBoost += 5;
+      if (signals.highSeverityBreach) anomalyBoost += 4;
+
+      const finalScore = Math.min(Math.round(rfScore + anomalyBoost), 100);
+
+      // Factor scores (0-10)
+      const factors = [
+        { icon: '🔑', name: 'PASSWORD LEAKS', score: Math.min(Math.round(passwordNorm * 10), 10), barColor: 'var(--accent-red)' },
+        { icon: '💀', name: 'BREACH SEVERITY', score: Math.min(Math.round(severityNorm * 10), 10), barColor: 'var(--accent-orange)' },
+        { icon: '🔁', name: 'EXPOSURE COUNT', score: Math.min(Math.round(breachNorm * 10), 10), barColor: 'var(--accent-yellow)' },
+        { icon: '⚡', name: 'RECENT BREACHES', score: Math.min(Math.round(recentNorm * 10), 10), barColor: 'var(--accent-cyan)' },
+        { icon: '🌐', name: 'PUBLIC EXPOSURE', score: Math.min(Math.round(publicExposure * 10), 10), barColor: 'var(--accent-blue)' },
+      ];
+
+      // SHAP values
+      const shapFactors = [
+        { label: 'has_password_breach', pts: Math.round(hasPasswordBreach * 28 + passwordNorm * 10), pct: Math.round(hasPasswordBreach * 70 + passwordNorm * 25) },
+        { label: 'breach_severity_score', pts: Math.round(severityNorm * 22 + criticalNorm * 8), pct: Math.round(severityNorm * 60 + criticalNorm * 20) },
+        { label: 'breach_norm (log1p)', pts: Math.round(breachNorm * 18), pct: Math.round(breachNorm * 50) },
+        { label: 'login_anomaly_score', pts: Math.round(loginAnomalyScore * 15), pct: Math.round(loginAnomalyScore * 40) },
+        { label: 'danger_composite', pts: Math.round(dangerComposite * 12), pct: Math.round(dangerComposite * 35) },
+        { label: 'public_exposure', pts: Math.round(publicExposure * 8), pct: Math.round(publicExposure * 25) },
+        { label: 'social_risk_score', pts: Math.round(socialRiskScore * 6), pct: Math.round(socialRiskScore * 20) },
+        { label: 'recent_breach_norm', pts: Math.round(recentNorm * 10), pct: Math.round(recentNorm * 30) },
+        { label: 'password_norm (log1p)', pts: Math.round(passwordNorm * 14), pct: Math.round(passwordNorm * 40) },
+      ].sort((a, b) => b.pts - a.pts);
+
+      return {
+        finalScore,
+        riskLevel: getRiskLabel(finalScore),
+        factors,
+        shapFactors,
+        features: { breachNorm, passwordNorm, severityNorm, criticalNorm, recentNorm, loginAnomalyScore, publicExposure, socialRiskScore, hasPasswordBreach, dangerComposite },
+        meta: { breachCount: mergedBreachCount, passwordLeaks, avgSeverity: avgSeverity.toFixed(1), criticalCount, recentBreaches }
+      };
+    }
+
+    /* ===== RENDER FUNCTIONS ===== */
+    function renderGauge(score, riskLevelOverride) {
+      const color = getRiskColor(score);
+      const circ = 502.65;
+      const offset = score === 0 ? circ : circ - (score / 100) * circ;
+
+      const fill = document.getElementById('gaugeFill');
+      const glow = document.getElementById('gaugeGlow');
+      const scoreEl = document.getElementById('gaugeScore');
+      const riskEl = document.getElementById('gaugeRisk');
+      const critTag = document.getElementById('criticalTag');
+
+      if (fill) { fill.style.stroke = color; fill.style.strokeDashoffset = offset; }
+      if (glow) { glow.style.stroke = color; glow.style.strokeDashoffset = offset; }
+
+      // Tactical score center styling
+      scoreEl.style.color = color;
+      scoreEl.style.textShadow = `0 0 15px ${color}50, 0 0 40px ${color}25`;
+      riskEl.style.color = color;
+      riskEl.textContent = getRiskLabel(score, riskLevelOverride);
+
+      // Update critical tag
+      if (critTag) {
+        if (score >= 75) {
+          critTag.textContent = 'CRITICAL_LEVEL';
+          critTag.style.color = 'var(--risk-critical)';
+        } else if (score >= 50) {
+          critTag.textContent = 'HIGH_RISK';
+          critTag.style.color = 'var(--risk-high)';
+        } else if (score >= 25) {
+          critTag.textContent = 'MODERATE';
+          critTag.style.color = 'var(--risk-medium)';
+        } else if (score > 0) {
+          critTag.textContent = 'LOW_RISK';
+          critTag.style.color = 'var(--risk-low)';
+        } else {
+          critTag.textContent = 'CLEAR';
+          critTag.style.color = 'var(--accent-green)';
+        }
+      }
+
+      if (score === 0) {
+        scoreEl.textContent = '0';
+        return;
+      }
+      let current = 0;
+      const step = score / 60;
+      const timer = setInterval(() => {
+        current = Math.min(current + step, score);
+        scoreEl.textContent = Math.round(current);
+        if (current >= score) clearInterval(timer);
+      }, 30);
+    }
+
+    function renderSignals(signals) {
+      const map = {
+        'sig-password': { key: 'passwordExposed', label: 'EXPOSED' },
+        'sig-recent': { key: 'recentBreach', label: 'DETECTED' },
+        'sig-multiple': { key: 'multipleExposures', label: 'CONFIRMED' },
+        'sig-highsev': { key: 'highSeverityBreach', label: 'PRESENT' },
+      };
+      Object.entries(map).forEach(([id, cfg]) => {
+        const el = document.getElementById(id);
+        const active = signals[cfg.key];
+        el.className = `signal-card ${active ? 'active' : 'inactive'}`;
+        el.querySelector('.signal-status').textContent = active ? cfg.label : 'NONE';
+      });
+    }
+
+    function renderFactors(factors) {
+      const grid = document.getElementById('factorsGrid');
+      grid.innerHTML = '';
+      factors.forEach(f => {
+        const pct = (f.score / 10) * 100;
+        const card = document.createElement('div');
+        card.className = 'factor-card';
+        card.innerHTML = `
       <div class="factor-icon">${f.icon}</div>
       <div class="factor-name">${f.name}</div>
       <div class="factor-score-num" style="color:${f.barColor}">${f.score}<span style="font-size:14px;color:var(--text-muted)">/10</span></div>
@@ -1753,101 +3526,101 @@ function renderFactors(factors) {
         <div class="factor-bar" style="background:${f.barColor};width:${pct}%"></div>
       </div>
     `;
-    grid.appendChild(card);
-    requestAnimationFrame(() => {
-      card.querySelector('.factor-bar').style.width = pct + '%';
-    });
-  });
-}
+        grid.appendChild(card);
+        requestAnimationFrame(() => {
+          card.querySelector('.factor-bar').style.width = pct + '%';
+        });
+      });
+    }
 
-function renderSHAP(shapFactors) {
-  const maxPts = shapFactors[0]?.pts || 1;
-  const container = document.getElementById('shapBars');
-  container.innerHTML = '';
-  shapFactors.forEach((s, i) => {
-    const pct = Math.min((s.pts / Math.max(maxPts, 1)) * 100, 100);
-    const item = document.createElement('div');
-    item.className = 'shap-item';
-    item.style.animationDelay = `${i * 0.08}s`;
-    item.innerHTML = `
+    function renderSHAP(shapFactors) {
+      const maxPts = shapFactors[0]?.pts || 1;
+      const container = document.getElementById('shapBars');
+      container.innerHTML = '';
+      shapFactors.forEach((s, i) => {
+        const pct = Math.min((s.pts / Math.max(maxPts, 1)) * 100, 100);
+        const item = document.createElement('div');
+        item.className = 'shap-item';
+        item.style.animationDelay = `${i * 0.08}s`;
+        item.innerHTML = `
       <div class="shap-label">${s.label}</div>
       <div class="shap-bar-track"><div class="shap-bar-fill" style="width:0%"></div></div>
       <div class="shap-pts">+${s.pts} pts</div>
     `;
-    container.appendChild(item);
-    setTimeout(() => {
-      item.querySelector('.shap-bar-fill').style.width = pct + '%';
-    }, 100 + i * 60);
-  });
-}
+        container.appendChild(item);
+        setTimeout(() => {
+          item.querySelector('.shap-bar-fill').style.width = pct + '%';
+        }, 100 + i * 60);
+      });
+    }
 
-function renderBreaches(exposures) {
-  allBreaches = exposures;
-  redrawBreachTable();
-}
+    function renderBreaches(exposures) {
+      allBreaches = exposures;
+      redrawBreachTable();
+    }
 
-function redrawBreachTable() {
-  const tbody = document.getElementById('breachTbody');
-  tbody.innerHTML = '';
-  let filtered = allBreaches;
+    function redrawBreachTable() {
+      const tbody = document.getElementById('breachTbody');
+      tbody.innerHTML = '';
+      let filtered = allBreaches;
 
-  if (currentFilter === 'credential') filtered = filtered.filter(e => e.type === 'credential');
-  else if (currentFilter === 'email_only') filtered = filtered.filter(e => e.type === 'email_only');
-  else if (currentFilter === 'password') filtered = filtered.filter(e => e.passwordIncluded);
+      if (currentFilter === 'credential') filtered = filtered.filter(e => e.type === 'credential');
+      else if (currentFilter === 'email_only') filtered = filtered.filter(e => e.type === 'email_only');
+      else if (currentFilter === 'password') filtered = filtered.filter(e => e.passwordIncluded);
 
-  if (currentSearch) {
-    const q = currentSearch.toLowerCase();
-    filtered = filtered.filter(e => e.name.toLowerCase().includes(q));
-  }
+      if (currentSearch) {
+        const q = currentSearch.toLowerCase();
+        filtered = filtered.filter(e => e.name.toLowerCase().includes(q));
+      }
 
-  document.getElementById('breachCountLabel').textContent = `${filtered.length} RECORDS`;
+      document.getElementById('breachCountLabel').textContent = `${filtered.length} RECORDS`;
 
-  filtered.forEach((e, i) => {
-    const tr = document.createElement('tr');
-    tr.style.animationDelay = `${i * 0.02}s`;
-    tr.innerHTML = `
+      filtered.forEach((e, i) => {
+        const tr = document.createElement('tr');
+        tr.style.animationDelay = `${i * 0.02}s`;
+        tr.innerHTML = `
       <td>${e.name}</td>
       <td>${formatDate(e.date)}</td>
       <td><span class="type-badge">${e.type.toUpperCase()}</span></td>
       <td class="${e.passwordIncluded ? 'pwd-yes' : 'pwd-no'}">${e.passwordIncluded ? '⚠ YES' : '–'}</td>
       <td><span class="sev-badge ${getSevClass(e.severity)}">${getSevLabel(e.severity)} ${e.severity}</span></td>
     `;
-    tbody.appendChild(tr);
-  });
-}
+        tbody.appendChild(tr);
+      });
+    }
 
-function filterBreaches(type, btn) {
-  currentFilter = type;
-  document.querySelectorAll('.breach-filter').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  redrawBreachTable();
-}
+    function filterBreaches(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.breach-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      redrawBreachTable();
+    }
 
-function searchBreaches(q) {
-  currentSearch = q;
-  redrawBreachTable();
-}
+    function searchBreaches(q) {
+      currentSearch = q;
+      redrawBreachTable();
+    }
 
-function renderRemediation(mlResult, signals) {
-  const grid = document.getElementById('remediationGrid');
-  const items = [];
-  if (signals.passwordExposed) {
-    items.push({ urgent: true, icon: '🔐', title: 'CHANGE ALL PASSWORDS', desc: 'Passwords from multiple breaches are in the wild. Change all unique passwords for every service.', time: '~45 min' });
-  }
-  items.push({ urgent: false, icon: '🛡', title: 'ENABLE TWO-FACTOR AUTH', desc: 'Enable 2FA on all critical accounts: email, banking, social media. Use an authenticator app.', time: '~20 min' });
-  if (signals.multipleExposures) {
-    items.push({ urgent: true, icon: '🔍', title: 'AUDIT ALL ACCOUNTS', desc: `${mlResult.meta.breachCount} breach exposures detected. Audit each service and close unused accounts.`, time: '~2 hrs' });
-  }
-  items.push({ urgent: false, icon: '📧', title: 'USE A PASSWORD MANAGER', desc: 'Stop reusing passwords. Use Bitwarden or 1Password to generate unique strong passwords.', time: '~30 min' });
-  items.push({ urgent: false, icon: '⚡', title: 'CHECK SPF/DKIM/DMARC', desc: 'If you own a domain, ensure SPF, DKIM, DMARC records are configured to prevent spoofing.', time: '~1 hr' });
-  if (mlResult.finalScore >= 75) {
-    items.push({ urgent: true, icon: '🚨', title: 'ENABLE FRAUD ALERTS', desc: 'Critical risk level — consider placing a credit freeze and enabling identity theft protection.', time: '~15 min' });
-  }
-  grid.innerHTML = '';
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = `remed-item ${item.urgent ? 'urgent' : ''}`;
-    div.innerHTML = `
+    function renderRemediation(mlResult, signals) {
+      const grid = document.getElementById('remediationGrid');
+      const items = [];
+      if (signals.passwordExposed) {
+        items.push({ urgent: true, icon: '🔐', title: 'CHANGE ALL PASSWORDS', desc: 'Passwords from multiple breaches are in the wild. Change all unique passwords for every service.', time: '~45 min' });
+      }
+      items.push({ urgent: false, icon: '🛡', title: 'ENABLE TWO-FACTOR AUTH', desc: 'Enable 2FA on all critical accounts: email, banking, social media. Use an authenticator app.', time: '~20 min' });
+      if (signals.multipleExposures) {
+        items.push({ urgent: true, icon: '🔍', title: 'AUDIT ALL ACCOUNTS', desc: `${mlResult.meta.breachCount} breach exposures detected. Audit each service and close unused accounts.`, time: '~2 hrs' });
+      }
+      items.push({ urgent: false, icon: '📧', title: 'USE A PASSWORD MANAGER', desc: 'Stop reusing passwords. Use Bitwarden or 1Password to generate unique strong passwords.', time: '~30 min' });
+      items.push({ urgent: false, icon: '⚡', title: 'CHECK SPF/DKIM/DMARC', desc: 'If you own a domain, ensure SPF, DKIM, DMARC records are configured to prevent spoofing.', time: '~1 hr' });
+      if (mlResult.finalScore >= 75) {
+        items.push({ urgent: true, icon: '🚨', title: 'ENABLE FRAUD ALERTS', desc: 'Critical risk level — consider placing a credit freeze and enabling identity theft protection.', time: '~15 min' });
+      }
+      grid.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `remed-item ${item.urgent ? 'urgent' : ''}`;
+        div.innerHTML = `
       <div class="remed-icon">${item.icon}</div>
       <div class="remed-body">
         <div class="remed-title">${item.title}</div>
@@ -1855,13 +3628,13 @@ function renderRemediation(mlResult, signals) {
         <div class="remed-time">⏱ ${item.time}</div>
       </div>
     `;
-    grid.appendChild(div);
-  });
-}
+        grid.appendChild(div);
+      });
+    }
 
-function renderCoverage(lhData, xonData) {
-  const grid = document.getElementById('coverageGrid');
-  grid.innerHTML = `
+    function renderCoverage(lhData, xonData) {
+      const grid = document.getElementById('coverageGrid');
+      grid.innerHTML = `
     <div class="cov-card">
       <div class="cov-icon">🤖</div>
       <div>
@@ -1879,144 +3652,504 @@ function renderCoverage(lhData, xonData) {
       <div class="cov-status ${xonData ? 'cov-ok' : 'cov-err'}">${xonData ? '✓ OK' : '⚠ ERR'}</div>
     </div>
   `;
-}
-
-function renderJSON(data) {
-  const body = document.getElementById('jsonBody');
-  body.textContent = JSON.stringify(data, null, 2);
-}
-
-function toggleJson() {
-  const body = document.getElementById('jsonBody');
-  const arrow = document.getElementById('jsonArrow');
-  body.classList.toggle('open');
-  arrow.classList.toggle('open');
-}
-
-/* ===== MAIN SCAN ===== */
-async function runScan() {
-  const email = document.getElementById('emailInput').value.trim();
-  if (!email || !email.includes('@')) {
-    document.getElementById('emailInput').style.borderColor = 'var(--accent-red)';
-    setTimeout(() => document.getElementById('emailInput').style.borderColor = '', 2000);
-    return;
-  }
-
-  // Reset UI
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errorPanel').style.display = 'none';
-  document.getElementById('scanBtn').disabled = true;
-  document.getElementById('scanBtn').textContent = 'SCANNING...';
-
-  await runTerminal(email);
-
-  try {
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: email })
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: 'Server error' }));
-      throw new Error(err.error || `HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    renderResults(data, email);
+    function renderJSON(data) {
+      const body = document.getElementById('jsonBody');
+      body.textContent = JSON.stringify(data, null, 2);
+    }
 
-  } catch (err) {
-    showError(err.message);
-  } finally {
-    document.getElementById('scanBtn').disabled = false;
-    document.getElementById('scanBtn').textContent = 'SCAN ▶';
-  }
-}
+    function toggleJson() {
+      const body = document.getElementById('jsonBody');
+      const arrow = document.getElementById('jsonArrow');
+      body.classList.toggle('open');
+      arrow.classList.toggle('open');
+    }
 
-function renderResults(data, email) {
-  const lhData  = data.leakhunter  || {};
-  const xonData = data.xposedornot || null;
-  // Always use server-computed ML result — never simulate on the client
-  const mlResult = data.ml;
+    /* ===== MAIN SCAN ===== */
+    async function runScan() {
+      const email = document.getElementById('emailInput').value.trim();
+      if (!email || !email.includes('@')) {
+        document.getElementById('emailInput').style.borderColor = 'var(--accent-red)';
+        setTimeout(() => document.getElementById('emailInput').style.borderColor = '', 2000);
+        return;
+      }
 
-  if (!mlResult) {
-    showError('Server returned no ML result. Check backend logs.');
-    return;
-  }
-  _renderAll(lhData, xonData, mlResult, data);
-   setAriaContext(data);
-}
+      // Reset UI
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('errorPanel').style.display = 'none';
+      document.getElementById('scanBtn').disabled = true;
+      document.getElementById('scanBtn').textContent = 'SCANNING...';
 
-function renderDemoMode(email) {
-  // Simulate a realistic response for demo
-  const demoLH = {
-    isExposed: true, exposureCount: 12, riskScore: 0.72, riskLevel: 'high',
-    exposures: [
-      { name: 'Adobe', type: 'credential', date: '2013-10-04', passwordIncluded: true, severity: 9 },
-      { name: 'LinkedIn', type: 'credential', date: '2012-05-05', passwordIncluded: true, severity: 9 },
-      { name: 'Dropbox', type: 'credential', date: '2012-07-01', passwordIncluded: true, severity: 9 },
-      { name: 'MyFitnessPal', type: 'credential', date: '2018-02-01', passwordIncluded: true, severity: 9 },
-      { name: 'Canva', type: 'credential', date: '2019-05-24', passwordIncluded: true, severity: 9 },
-      { name: 'Chegg', type: 'credential', date: '2018-04-28', passwordIncluded: true, severity: 9 },
-      { name: 'Zynga', type: 'credential', date: '2019-09-01', passwordIncluded: true, severity: 9 },
-      { name: 'Duolingo', type: 'credential', date: '2023-01-24', passwordIncluded: false, severity: 7 },
-      { name: 'Apollo', type: 'email_only', date: '2018-07-23', passwordIncluded: false, severity: 7 },
-      { name: 'Twitter', type: 'credential', date: '2022-01-01', passwordIncluded: false, severity: 7 },
-      { name: 'Trello', type: 'credential', date: '2024-01-16', passwordIncluded: false, severity: 7 },
-      { name: 'Canva', type: 'credential', date: '2019-05-24', passwordIncluded: true, severity: 8 },
-    ],
-    signals: { passwordExposed: true, recentBreach: true, multipleExposures: true, highSeverityBreach: true }
-  };
-  const mlResult = simulateMLPipeline(demoLH, null);
-  _renderAll(demoLH, null, mlResult, { leakhunter: demoLH, ml: mlResult, demo: true });
-}
+      await runTerminal(email);
 
-function _renderAll(lhData, xonData, mlResult, rawData) {
-  const exposures = lhData.exposures || [];
-  const signals = lhData.signals || {};
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email })
+        });
 
-  // Meta bar
-  const sortedDates = exposures.map(e => e.date).filter(Boolean).sort();
-  const firstDate = sortedDates[0] ? sortedDates[0].substring(0,7) : '—';
-  const latestDate = sortedDates[sortedDates.length-1] ? sortedDates[sortedDates.length-1].substring(0,7) : '—';
-  const pwdLeaks = exposures.filter(e => e.passwordIncluded).length;
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: 'Server error' }));
+          throw new Error(err.error || `HTTP ${response.status}`);
+        }
 
-  document.getElementById('metaExposures').textContent = lhData.exposureCount || exposures.length;
-  document.getElementById('metaPasswords').textContent = `${pwdLeaks} FOUND`;
-  document.getElementById('metaFirst').textContent = firstDate;
-  document.getElementById('metaLatest').textContent = latestDate;
-  document.getElementById('metaSeverity').textContent = mlResult.meta.avgSeverity + '/10';
-  document.getElementById('metaQuota').textContent = rawData.quota || '—';
-  document.getElementById('headerQuota').textContent = `QUOTA: ${rawData.quota || '—'}`;
+        const data = await response.json();
+        renderResults(data, email);
 
-  // ML pipeline labels
-  document.getElementById('ps-model').textContent = mlResult.finalScore + ' / 100';
-  document.getElementById('ps-shap').textContent = mlResult.shapFactors.length + ' FACTORS';
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('scanBtn').textContent = 'SCAN ▶';
+      }
+    }
 
-  renderGauge(mlResult.finalScore, mlResult.riskLevel);
-  renderSignals(signals);
-  renderFactors(mlResult.factors);
-  renderSHAP(mlResult.shapFactors);
-  renderBreaches(exposures);
-  renderRemediation(mlResult, signals);
-  renderCoverage(lhData, xonData);
-  renderJSON(rawData);
+    function renderResults(data, email) {
+      const lhData = data.leakhunter || {};
+      const xonData = data.xposedornot || null;
+      // Always use server-computed ML result — never simulate on the client
+      const mlResult = data.ml;
 
-  document.getElementById('terminal').style.display = 'none';
-  document.getElementById('results').style.display = 'block';
-}
+      if (!mlResult) {
+        showError('Server returned no ML result. Check backend logs.');
+        return;
+      }
+      _renderAll(lhData, xonData, mlResult, data);
+      setAriaContext(data);
+    }
 
-function showError(msg) {
-  const ep = document.getElementById('errorPanel');
-  ep.style.display = 'block';
-  ep.innerHTML = `<strong>[ERROR]</strong> ${msg}`;
-  document.getElementById('terminal').style.display = 'none';
-}
+    function renderDemoMode(email) {
+      // Simulate a realistic response for demo
+      const demoLH = {
+        isExposed: true, exposureCount: 12, riskScore: 0.72, riskLevel: 'high',
+        exposures: [
+          { name: 'Adobe', type: 'credential', date: '2013-10-04', passwordIncluded: true, severity: 9 },
+          { name: 'LinkedIn', type: 'credential', date: '2012-05-05', passwordIncluded: true, severity: 9 },
+          { name: 'Dropbox', type: 'credential', date: '2012-07-01', passwordIncluded: true, severity: 9 },
+          { name: 'MyFitnessPal', type: 'credential', date: '2018-02-01', passwordIncluded: true, severity: 9 },
+          { name: 'Canva', type: 'credential', date: '2019-05-24', passwordIncluded: true, severity: 9 },
+          { name: 'Chegg', type: 'credential', date: '2018-04-28', passwordIncluded: true, severity: 9 },
+          { name: 'Zynga', type: 'credential', date: '2019-09-01', passwordIncluded: true, severity: 9 },
+          { name: 'Duolingo', type: 'credential', date: '2023-01-24', passwordIncluded: false, severity: 7 },
+          { name: 'Apollo', type: 'email_only', date: '2018-07-23', passwordIncluded: false, severity: 7 },
+          { name: 'Twitter', type: 'credential', date: '2022-01-01', passwordIncluded: false, severity: 7 },
+          { name: 'Trello', type: 'credential', date: '2024-01-16', passwordIncluded: false, severity: 7 },
+          { name: 'Canva', type: 'credential', date: '2019-05-24', passwordIncluded: true, severity: 8 },
+        ],
+        signals: { passwordExposed: true, recentBreach: true, multipleExposures: true, highSeverityBreach: true }
+      };
+      const mlResult = simulateMLPipeline(demoLH, null);
+      _renderAll(demoLH, null, mlResult, { leakhunter: demoLH, ml: mlResult, demo: true });
+    }
 
-/* ===== KEY LISTENER ===== */
-document.getElementById('emailInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') runScan();
-});
-</script>
+    function _renderAll(lhData, xonData, mlResult, rawData) {
+      const exposures = lhData.exposures || [];
+      const signals = lhData.signals || {};
+
+      // Meta bar
+      const sortedDates = exposures.map(e => e.date).filter(Boolean).sort();
+      const latestDate = sortedDates[sortedDates.length - 1] ? sortedDates[sortedDates.length - 1].substring(0, 7) : '—';
+      const pwdLeaks = exposures.filter(e => e.passwordIncluded).length;
+
+      // Tactical metric boxes
+      document.getElementById('metaExposures').textContent = lhData.exposureCount || exposures.length;
+      document.getElementById('metaPasswords').textContent = `${pwdLeaks} FOUND`;
+      document.getElementById('metaLatest').textContent = latestDate;
+      document.getElementById('metaSeverity').textContent = mlResult.meta.avgSeverity + '/10';
+
+      // ML pipeline labels
+      const psModel = document.getElementById('ps-model');
+      const psShap = document.getElementById('ps-shap');
+      if (psModel) psModel.textContent = mlResult.finalScore + ' / 100';
+      if (psShap) psShap.textContent = mlResult.shapFactors.length + ' FACTORS';
+
+      renderGauge(mlResult.finalScore, mlResult.riskLevel);
+      renderSignals(signals);
+      renderFactors(mlResult.factors);
+      renderBreaches(exposures);
+      renderJSON(rawData);
+
+      // Activate inline chatbot with scan context
+      activateInlineChat(mlResult, lhData, signals);
+
+      document.getElementById('terminal').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+    }
+
+    function showError(msg) {
+      const ep = document.getElementById('errorPanel');
+      ep.style.display = 'block';
+      ep.innerHTML = `<strong>[ERROR]</strong> ${msg}`;
+      document.getElementById('terminal').style.display = 'none';
+    }
+
+    /* ===== KEY LISTENER ===== */
+    // Deferred — emailInput may not exist yet (inside hidden dashboard)
+    document.addEventListener('keydown', e => {
+      const emailInput = document.getElementById('emailInput');
+      if (e.key === 'Enter' && document.activeElement === emailInput) runScan();
+    });
+
+    /* ===== ARIA EMBEDDED CHATBOT ===== */
+    let ariaEmbedContext = null;
+    let ariaEmbedHistory = [];
+
+    function activateInlineChat(mlResult, lhData, signals) {
+      const meta = mlResult.meta || {};
+      ariaEmbedContext = {
+        score: mlResult.finalScore,
+        riskLevel: mlResult.riskLevel,
+        breachCount: meta.breachCount || 0,
+        passwordLeaks: meta.passwordLeaks || 0,
+        avgSeverity: meta.avgSeverity || 0,
+        criticalCount: meta.criticalCount || 0,
+        recentBreaches: meta.recentBreaches || 0,
+        breachNames: (lhData && lhData.breaches ? lhData.breaches.map(b => b.name || b.title || '').filter(Boolean) : []).slice(0, 10)
+      };
+      ariaEmbedHistory = [];
+
+      const ctxBar = document.getElementById('ariaContextBarEmbed');
+      const scoreBadge = document.getElementById('ariaScoreBadgeEmbed');
+      const riskLabel = document.getElementById('ariaRiskLabelEmbed');
+      if (ctxBar) ctxBar.style.display = 'flex';
+
+      const score = mlResult.finalScore;
+      if (scoreBadge) {
+        scoreBadge.textContent = score + '/100';
+        scoreBadge.style.color = score >= 75 ? 'var(--risk-critical)' : score >= 50 ? 'var(--risk-high)' : score >= 25 ? 'var(--risk-medium)' : 'var(--risk-low)';
+      }
+      if (riskLabel) {
+        riskLabel.textContent = (mlResult.riskLevel || '').toUpperCase();
+        riskLabel.style.color = score >= 75 ? 'var(--risk-critical)' : score >= 50 ? 'var(--risk-high)' : score >= 25 ? 'var(--risk-medium)' : 'var(--risk-low)';
+      }
+
+      const msgs = document.getElementById('ariaMessagesEmbed');
+      if (!msgs) return;
+      msgs.innerHTML = '';
+
+      let greeting;
+      if (score === 0) {
+        greeting = `Good news — your scan shows NO exposure in our databases. Your digital footprint looks clean. Want tips on staying that way?`;
+      } else if (score < 25) {
+        greeting = `Your risk score is <strong>${score}/100</strong> (LOW RISK). You have ${ariaEmbedContext.breachCount} breach(es) on record. I can walk you through what to do.`;
+      } else if (score < 50) {
+        greeting = `Your risk score is <strong>${score}/100</strong> (MEDIUM). You have ${ariaEmbedContext.breachCount} breaches with ${ariaEmbedContext.passwordLeaks} password leak(s). Ask me where to start.`;
+      } else if (score < 75) {
+        greeting = `⚠️ Risk score <strong>${score}/100</strong> (HIGH). ${ariaEmbedContext.breachCount} breaches, ${ariaEmbedContext.passwordLeaks} exposed passwords. You need to act now.`;
+      } else {
+        greeting = `🚨 Risk score <strong>${score}/100</strong> (CRITICAL). ${ariaEmbedContext.breachCount} breaches including ${ariaEmbedContext.criticalCount} critical. Ask me for emergency steps.`;
+      }
+
+      ariaEmbedAppend('bot', greeting);
+
+      const chips = score === 0
+        ? ['How do I stay protected?', 'Should I use a VPN?', 'Best password manager?']
+        : score < 50
+        ? ['What should I do first?', 'Which accounts are at risk?', 'Do I need 2FA?']
+        : ['Emergency steps?', 'How to fix password leaks?', 'Explain my risk score'];
+
+      const suggestEl = document.getElementById('ariaSuggestionsEmbed');
+      if (suggestEl) {
+        suggestEl.innerHTML = chips.map(c =>
+          `<button class="aria-chip" onclick="ariaEmbedQuickSend('${c}')">${c}</button>`
+        ).join('');
+      }
+    }
+
+    function ariaEmbedAppend(role, html) {
+      const msgs = document.getElementById('ariaMessagesEmbed');
+      if (!msgs) return;
+      const div = document.createElement('div');
+      div.className = `aria-msg ${role}`;
+      div.innerHTML = role === 'bot'
+        ? `<div class="aria-msg-avatar" style="border-color:var(--accent-cyan);color:var(--accent-cyan)">AI</div><div class="aria-bubble">${html}</div>`
+        : `<div class="aria-msg-avatar">YOU</div><div class="aria-bubble" style="background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);text-align:right">${html}</div>`;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function ariaEmbedShowTyping() {
+      const msgs = document.getElementById('ariaMessagesEmbed');
+      if (!msgs) return null;
+      const div = document.createElement('div');
+      div.className = 'aria-msg bot';
+      div.id = 'ariaEmbedTyping';
+      div.innerHTML = `<div class="aria-msg-avatar" style="border-color:var(--accent-cyan);color:var(--accent-cyan)">AI</div>
+        <div class="aria-bubble"><div class="aria-typing"><span></span><span></span><span></span></div></div>`;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+      return div;
+    }
+
+    function ariaEmbedQuickSend(text) {
+      const input = document.getElementById('ariaEmbedInput');
+      if (input) input.value = text;
+      ariaEmbedSend();
+    }
+
+    async function ariaEmbedSend() {
+      const input = document.getElementById('ariaEmbedInput');
+      const sendBtn = document.getElementById('ariaEmbedSendBtn');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      if (sendBtn) sendBtn.disabled = true;
+
+      if (!ariaEmbedContext) {
+        ariaEmbedAppend('bot', 'Run a breach scan first to activate AI analysis.');
+        if (sendBtn) sendBtn.disabled = false;
+        return;
+      }
+
+      ariaEmbedAppend('user', text);
+      ariaEmbedHistory.push({ role: 'user', content: text });
+      const typing = ariaEmbedShowTyping();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, context: ariaEmbedContext, history: ariaEmbedHistory.slice(-6) })
+        });
+        const data = await res.json();
+        if (typing) typing.remove();
+        const reply = data.reply || 'Sorry, could not process that.';
+        ariaEmbedHistory.push({ role: 'assistant', content: reply });
+        ariaEmbedAppend('bot', reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'));
+      } catch (err) {
+        if (typing) typing.remove();
+        ariaEmbedAppend('bot', 'Connection error. Please try again.');
+      }
+
+      const msgs = document.getElementById('ariaMessagesEmbed');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      if (sendBtn) sendBtn.disabled = false;
+    }
+
+    function inlineChatSend() { ariaEmbedSend(); }
+  </script>
+
+  <!-- THREE.JS CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    /* ===== ANTI-GRAVITY PARTICLE SYSTEM ===== */
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('particleCanvas');
+      const cursorGlow = document.getElementById('cursorGlow');
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 50;
+
+      // Mouse tracking
+      const mouse = { x: 0, y: 0, worldX: 0, worldY: 0 };
+      let mouseActive = false;
+
+      // Hover interaction disabled for particle physics
+
+      document.addEventListener('mouseleave', () => { mouseActive = false; });
+
+      // ===== PARTICLE SETUP =====
+      const PARTICLE_COUNT = 2250;
+      const geometry = new THREE.BufferGeometry();
+
+      const positions = new Float32Array(PARTICLE_COUNT * 3);
+      const velocities = new Float32Array(PARTICLE_COUNT * 3);
+      const colors = new Float32Array(PARTICLE_COUNT * 3);
+      const sizes = new Float32Array(PARTICLE_COUNT);
+      const originalPositions = new Float32Array(PARTICLE_COUNT * 3);
+      const brightness = new Float32Array(PARTICLE_COUNT);
+
+      const green = new THREE.Color('#39ff14');
+      const cyan = new THREE.Color('#00f2ff');
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3;
+
+        // Spherical distribution with some randomness
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const radius = 12 + Math.random() * 18;
+
+        positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        positions[i3 + 2] = radius * Math.cos(phi) - 10;
+
+        originalPositions[i3] = positions[i3];
+        originalPositions[i3 + 1] = positions[i3 + 1];
+        originalPositions[i3 + 2] = positions[i3 + 2];
+
+        // High-velocity zipping drift
+        velocities[i3] = (Math.random() - 0.5) * 0.1;
+        velocities[i3 + 1] = (Math.random() - 0.5) * 0.1;
+        velocities[i3 + 2] = (Math.random() - 0.5) * 0.05;
+
+        // Color: mix between green and cyan
+        const t = Math.random();
+        const color = green.clone().lerp(cyan, t);
+        colors[i3] = color.r;
+        colors[i3 + 1] = color.g;
+        colors[i3 + 2] = color.b;
+
+        sizes[i] = 1.0 + Math.random() * 2.5;
+        brightness[i] = 0.05 + Math.random() * 0.15; // Lower opacity, subtle/faint
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+      // Custom shader for bloom-like glowing particles
+      const vertexShader = `
+    attribute float size;
+    varying vec3 vColor;
+    varying float vBrightness;
+    void main() {
+      vColor = color;
+      vBrightness = size / 3.5;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * (200.0 / -mvPosition.z);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `;
+
+      const fragmentShader = `
+    varying vec3 vColor;
+    varying float vBrightness;
+    void main() {
+      float dist = length(gl_PointCoord - vec2(0.5));
+      if (dist > 0.5) discard;
+      // Soft glow falloff
+      float glow = 1.0 - smoothstep(0.0, 0.5, dist);
+      float bloom = exp(-dist * 6.0) * 0.7;
+      float alpha = (glow + bloom) * vBrightness;
+      gl_FragColor = vec4(vColor * (1.0 + bloom * 2.0), alpha);
+    }
+  `;
+
+      const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+
+      const particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+
+      // ===== ANIMATION LOOP =====
+      const clock = new THREE.Clock();
+      const repelRadius = 8;
+      const repelStrength = 0.35;
+      const returnStrength = 0.008;
+      const driftDecay = 0.998;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const elapsed = clock.getElapsedTime();
+        const posAttr = geometry.attributes.position;
+        const colAttr = geometry.attributes.color;
+        const sizeAttr = geometry.attributes.size;
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const i3 = i * 3;
+
+          // Zero-gravity drift
+          positions[i3] += velocities[i3];
+          positions[i3 + 1] += velocities[i3 + 1];
+          positions[i3 + 2] += velocities[i3 + 2];
+
+          // Slow drift decay
+          velocities[i3] *= driftDecay;
+          velocities[i3 + 1] *= driftDecay;
+          velocities[i3 + 2] *= driftDecay;
+
+          // Gentle return to original position
+          const dx = originalPositions[i3] - positions[i3];
+          const dy = originalPositions[i3 + 1] - positions[i3 + 1];
+          const dz = originalPositions[i3 + 2] - positions[i3 + 2];
+          velocities[i3] += dx * returnStrength;
+          velocities[i3 + 1] += dy * returnStrength;
+          velocities[i3 + 2] += dz * returnStrength;
+
+          // Organic float (sine wave micro-drift)
+          const floatPhase = elapsed * 0.3 + i * 0.001;
+          positions[i3 + 1] += Math.sin(floatPhase) * 0.003;
+          positions[i3] += Math.cos(floatPhase * 0.7) * 0.002;
+
+          // Mouse repulsion
+          let interactionIntensity = 0;
+          if (mouseActive) {
+            const mx = mouse.worldX - positions[i3];
+            const my = mouse.worldY - positions[i3 + 1];
+            const dist2D = Math.sqrt(mx * mx + my * my);
+
+            if (dist2D < repelRadius) {
+              const force = (1 - dist2D / repelRadius) * repelStrength;
+              const angle = Math.atan2(my, mx);
+              velocities[i3] -= Math.cos(angle) * force;
+              velocities[i3 + 1] -= Math.sin(angle) * force;
+              velocities[i3 + 2] += (Math.random() - 0.5) * force * 0.3;
+              interactionIntensity = 1 - dist2D / repelRadius;
+            }
+          }
+
+          // Brightness boost near cursor
+          const baseBrightness = brightness[i];
+          const boostedBrightness = baseBrightness + interactionIntensity * 1.5;
+
+          // Color intensification near cursor (shift towards white)
+          const t = Math.random() > 0.5 ? 0 : 1;
+          const baseColor = t === 0 ? green : cyan;
+          const r = baseColor.r + interactionIntensity * 0.4;
+          const g = baseColor.g + interactionIntensity * 0.3;
+          const b = baseColor.b + interactionIntensity * 0.4;
+          colors[i3] += (r - colors[i3]) * 0.1;
+          colors[i3 + 1] += (g - colors[i3 + 1]) * 0.1;
+          colors[i3 + 2] += (b - colors[i3 + 2]) * 0.1;
+
+          // Size pulse near cursor
+          const baseSize = 1.0 + (i % 3) * 0.8;
+          sizes[i] += ((baseSize + interactionIntensity * 3) - sizes[i]) * 0.1;
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+        sizeAttr.needsUpdate = true;
+
+        // Slow global rotation
+        particles.rotation.y = elapsed * 0.03;
+        particles.rotation.x = Math.sin(elapsed * 0.02) * 0.1;
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // ===== RESIZE HANDLER =====
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // ===== ENABLE POINTER EVENTS ON CANVAS FOR INTERACTION =====
+      // We keep pointer-events: none on the canvas but track via document
+      canvas.style.pointerEvents = 'none';
+
+    })();
+  </script>
 </body>
+
 </html>
