@@ -6,7 +6,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Debug: confirm key loaded (remove after testing)
 console.log('[ENV] LEAKHUNTER_API_KEY loaded:', process.env.LEAKHUNTER_API_KEY ? '✓ YES' : '✗ MISSING');
-console.log('[ENV] GEMINI_API_KEY loaded:', process.env.GEMINI_API_KEY ? '✓ YES' : '✗ MISSING');
+console.log('[ENV] GROQ_API_KEY loaded:', process.env.GROQ_API_KEY ? '✓ YES' : '✗ MISSING');
 const express   = require('express');
 const cors      = require('cors');
 const rateLimit = require('express-rate-limit');

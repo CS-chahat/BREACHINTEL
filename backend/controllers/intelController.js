@@ -121,13 +121,15 @@ async function getIntel(req, res) {
 
 // ── Heuristic fallbacks (Python unavailable) ─────────────────────────────────
 function heuristicPipeline(features) {
+  // Caps MUST match data_pipeline.py exactly (60, 40, 20, 20)
+  // Old caps (200, 100, 50, 30) were compressing small breach counts → wrong low scores
   const log1p = x => Math.log(1 + x);
   return {
-    breach_norm:         Math.min(log1p(features.breach_count)    / log1p(200), 1),
-    password_norm:       Math.min(log1p(features.password_leaks)  / log1p(100), 1),
+    breach_norm:         Math.min(log1p(features.breach_count)    / log1p(60),  1),
+    password_norm:       Math.min(log1p(features.password_leaks)  / log1p(40),  1),
     severity_norm:       Math.min(features.avg_severity / 10, 1),
-    critical_norm:       Math.min(log1p(features.critical_count)  / log1p(50),  1),
-    recent_norm:         Math.min(log1p(features.recent_breaches) / log1p(30),  1),
+    critical_norm:       Math.min(log1p(features.critical_count)  / log1p(20),  1),
+    recent_norm:         Math.min(log1p(features.recent_breaches) / log1p(20),  1),
     login_anomaly_score: Math.min(Math.max(features.login_anomaly_score, 0), 1),
     public_exposure:     Math.min(Math.max(features.public_exposure,     0), 1),
     social_risk_score:   Math.min(Math.max(features.social_risk_score,   0), 1),
@@ -141,17 +143,38 @@ function heuristicModel(nf, signals, breachCount) {
     return zeroResult();
   }
 
-  const danger = nf.breach_norm * 0.30 + nf.password_norm * 0.25
-               + nf.critical_norm * 0.25 + nf.severity_norm * 0.20;
-  const pHigh = Math.min(danger * 1.1, 1);
-  const pLow  = Math.max(1 - pHigh - 0.15, 0);
-  const pMed  = 1 - pHigh - pLow;
-  let score   = pLow * 18 + pMed * 52 + pHigh * 86;
-  if (signals?.highSeverityBreach) score += 6;
-  score = Math.min(Math.round(score), 100);
+  // ── Direct scoring — mirrors model.py direct_score() ────────────────────
+  const breach_n = nf.breach_norm   || 0;
+  const pwd_n    = nf.password_norm  || 0;
+  const sev_n    = nf.severity_norm  || 0;
+  const crit_n   = nf.critical_norm  || 0;
+  const recent_n = nf.recent_norm    || 0;
+  const has_pwd  = nf.has_password_breach || 0;
 
-  // Ensure a genuine positive score for exposed emails (min 5)
-  if (score < 5) score = 5;
+  const volume     = Math.min(breach_n * 100 * 0.75, 100);
+  const password   = Math.min(pwd_n * 100, 100);
+  const sev_weight = Math.min(0.50 + 0.50 * (breach_n / 0.27), 1.0);
+  const severity   = sev_n * 100 * sev_weight;
+  const critical   = Math.min(crit_n  * 100, 100);
+  const recent     = Math.min(recent_n * 100, 100);
+
+  let score = (
+    volume   * 0.35 +
+    password * 0.25 +
+    severity * 0.22 +
+    critical * 0.12 +
+    recent   * 0.06
+  );
+
+  if (has_pwd === 1) {
+    score = breach_n > 0.27
+      ? Math.min(score * 1.22, 100)
+      : Math.min(score * 1.10, 100);
+  }
+
+  score = Math.max(score, 8.0);
+  if (signals?.highSeverityBreach) score = Math.min(score + 6, 100);
+  score = Math.min(Math.round(score), 100);
 
   const risk = score >= 75 ? 'CRITICAL' : score >= 50 ? 'HIGH RISK' : score >= 25 ? 'MEDIUM' : 'LOW RISK';
 
@@ -159,11 +182,11 @@ function heuristicModel(nf, signals, breachCount) {
     score,
     risk_level: risk,
     factors: [
-      { icon: '🔑', name: 'PASSWORD LEAKS',  score: Math.round(nf.password_norm   * 10), barColor: 'var(--accent-red)' },
-      { icon: '💀', name: 'BREACH SEVERITY', score: Math.round(nf.severity_norm   * 10), barColor: 'var(--accent-orange)' },
-      { icon: '🔁', name: 'EXPOSURE COUNT',  score: Math.round(nf.breach_norm     * 10), barColor: 'var(--accent-yellow)' },
-      { icon: '⚡', name: 'RECENT BREACHES', score: Math.round(nf.recent_norm     * 10), barColor: 'var(--accent-cyan)' },
-      { icon: '🌐', name: 'PUBLIC EXPOSURE', score: Math.round(nf.public_exposure * 10), barColor: 'var(--accent-blue)' },
+      { icon: '🔑', name: 'PASSWORD LEAKS',  score: Math.min(Math.round(nf.password_norm   * 10), 10), barColor: 'var(--accent-red)' },
+      { icon: '💀', name: 'BREACH SEVERITY', score: Math.min(Math.round(nf.severity_norm   * 10), 10), barColor: 'var(--accent-orange)' },
+      { icon: '🔁', name: 'EXPOSURE COUNT',  score: Math.min(Math.round(nf.breach_norm     * 10), 10), barColor: 'var(--accent-yellow)' },
+      { icon: '⚡', name: 'RECENT BREACHES', score: Math.min(Math.round(nf.recent_norm     * 10), 10), barColor: 'var(--accent-cyan)' },
+      { icon: '🌐', name: 'PUBLIC EXPOSURE', score: Math.min(Math.round(nf.public_exposure * 10), 10), barColor: 'var(--accent-blue)' },
     ],
     shap_factors: [
       { label: 'has_password_breach',   pts: Math.round(nf.has_password_breach * 28 + nf.password_norm * 10), pct: 80 },

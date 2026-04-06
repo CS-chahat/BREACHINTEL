@@ -61,7 +61,8 @@ async function gatherIntelligence(email) {
     recent_breaches:     recentBreaches,
     // Only non-zero when there IS exposure evidence
     login_anomaly_score: signals.recentBreach      ? 0.75 : (mergedBreachCount > 0 ? 0.1 : 0),
-    public_exposure:     Math.min(mergedBreachCount / 200, 1),
+    // public_exposure: use log1p norm (cap 60) to match data_pipeline.py
+    public_exposure:     Math.min(Math.log1p(mergedBreachCount) / Math.log1p(60), 1),
     social_risk_score:   signals.multipleExposures ? 0.65 : (mergedBreachCount > 0 ? 0.1 : 0),
     has_password_breach: signals.passwordExposed   ? 1    : 0,
   };
