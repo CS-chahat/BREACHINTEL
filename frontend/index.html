@@ -2142,20 +2142,269 @@
       position: relative;
       width: 100%;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
       z-index: 10;
       transition: opacity 0.8s ease, transform 0.8s ease;
     }
+    #landingPage::-webkit-scrollbar { display: none; }
+    #landingPage { -ms-overflow-style: none; scrollbar-width: none; }
 
     #landingPage.exit {
       opacity: 0;
       transform: scale(0.95) translateY(-40px);
       pointer-events: none;
     }
+
+    /* ===== SCROLL SECTIONS ===== */
+    .snap-section {
+      height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      padding: 0 5%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #hero-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .snap-header {
+      font-family: var(--font-display);
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+      letter-spacing: 2px;
+      font-size: 20px;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      text-align: center;
+      z-index: 2;
+    }
+    #offer-section .snap-header {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 30px rgba(0, 242, 255, 0.6), 0 0 10px rgba(0, 242, 255, 0.8);
+      margin-bottom: 50px;
+    }
+
+    /* Section 2 — What We Offer */
+    .offer-layout {
+      display: flex;
+      gap: 32px;
+      width: 100%;
+      max-width: 1400px;
+      z-index: 2;
+    }
+    @media (max-width: 768px) { .offer-layout { flex-direction: column; } }
+    .offer-card {
+      flex: 1;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 242, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 242, 255, 0.05);
+      padding: 40px 30px;
+      text-align: center;
+      border-radius: 8px;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    .offer-card:hover {
+      border-color: rgba(0, 242, 255, 0.9);
+      transform: scale(0.96);
+      box-shadow: 0 0 40px rgba(0, 242, 255, 0.6), inset 0 0 15px rgba(0, 242, 255, 0.2);
+    }
+    .offer-card:hover .offer-desc {
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 0 4px rgba(0, 242, 255, 0.3);
+    }
+    .offer-num { font-family: var(--font-display); font-size: 32px; color: var(--neon-cyan); margin-bottom: 24px; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+    .offer-title { font-family: var(--font-display); font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 20px; color: white; }
+    .offer-desc { font-size: 14px; color: rgba(255, 255, 255, 0.6); line-height: 1.6; transition: all 0.4s ease; }
+
+    /* Section 3 — Security Solutions */
+    #solutions-section { padding-top: 120px; padding-bottom: 120px; }
+    .solutions-split-layout {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      max-height: 100vh;
+      max-width: 1400px;
+      gap: 60px;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 2;
+    }
+    @media (max-width: 1024px) {
+      .solutions-split-layout { flex-direction: column; text-align: left; align-items: flex-start; }
+    }
+    .solutions-left { flex: 1; max-width: 650px; }
+    .solutions-header {
+      font-size: 80px;
+      font-weight: 800;
+      color: var(--neon-green);
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      text-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
+    }
+    .solutions-subtext { font-size: 18px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; }
+    .solutions-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+      align-items: flex-end;
+      justify-content: flex-start;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 25px;
+      padding-bottom: 30px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--neon-green) transparent;
+    }
+    .solutions-right::-webkit-scrollbar { width: 8px; }
+    .solutions-right::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+    .solutions-right::-webkit-scrollbar-thumb { background: rgba(57, 255, 20, 0.3); border-radius: 4px; }
+    .circle-wrap {
+      animation: drift 6s ease-in-out infinite;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .circle-wrap:nth-child(1) { animation-delay: 0s; z-index: 3; }
+    .circle-wrap:nth-child(2) { animation-delay: -2s; z-index: 2; }
+    .circle-wrap:nth-child(3) { animation-delay: -4s; z-index: 1; }
+    .circle-hub {
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(10, 10, 10, 0.7);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(57, 255, 20, 0.3);
+      box-shadow: 0 0 40px rgba(57, 255, 20, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+      transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      margin: 10px;
+    }
+    .circle-hub:hover {
+      transform: scale(1.05);
+      border-color: rgba(57, 255, 20, 0.8);
+      box-shadow: 0 0 50px rgba(57, 255, 20, 0.4), inset 0 0 20px rgba(57, 255, 20, 0.2);
+    }
+    .circle-title { font-family: var(--font-display); font-size: 18px; font-weight: bold; color: white; margin-bottom: 12px; letter-spacing: 1px; text-shadow: 0 0 8px rgba(57, 255, 20, 0.5); }
+    .circle-desc { font-size: 14px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; }
+    @keyframes drift {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* Section 4 — Contact */
+    .contact-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .contact-grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      width: 100%;
+      max-width: 1400px;
+      margin-top: 40px;
+    }
+    @media (max-width: 900px) { .contact-grid-layout { grid-template-columns: 1fr; } }
+    .contact-grid-card {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      border-radius: 8px;
+      padding: 40px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+      transition: all 0.4s ease;
+    }
+    .contact-grid-card:hover { border-color: rgba(0, 242, 255, 0.6); box-shadow: 0 0 30px rgba(0, 242, 255, 0.15); }
+    .contact-title { font-family: var(--font-display); font-size: 14px; color: rgba(255, 255, 255, 0.5); letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+    .contact-info { font-family: var(--font-display); font-size: 28px; color: white; margin-bottom: 10px; font-weight: bold; }
+    .contact-sub { font-size: 15px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; }
+    .scanline-text {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      text-shadow: 0 0 10px rgba(0, 242, 255, 0.8);
+      color: var(--neon-cyan);
+    }
+    .scanline-text::after {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px var(--neon-cyan);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .contact-grid-card:hover .scanline-text::after {
+      opacity: 1;
+      animation: scanline-hover 1.5s linear infinite;
+    }
+    @keyframes scanline-hover { 0% { top: -20%; } 100% { top: 120%; } }
+    .floating-icon { position: absolute; opacity: 0.15; pointer-events: none; z-index: 1; }
+    .icon-mail { top: 10%; right: 15%; width: 120px; height: 120px; animation: float-icon-1 12s ease-in-out infinite; }
+    .icon-phone { bottom: 20%; left: 10%; width: 150px; height: 150px; animation: float-icon-2 15s ease-in-out infinite alternate; }
+    @keyframes float-icon-1 { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(5deg); } 100% { transform: translateY(0) rotate(0deg); } }
+    @keyframes float-icon-2 { 0% { transform: translateY(0) rotate(0deg) scale(1); } 50% { transform: translateY(20px) rotate(-5deg) scale(1.05); } 100% { transform: translateY(0) rotate(0deg) scale(1); } }
+    #contact-section .snap-header { font-size: 64px; font-weight: 800; color: var(--neon-cyan); text-shadow: 0 0 30px rgba(0, 242, 255, 0.6); letter-spacing: -0.02em; }
+
+    /* Scroll animation classes */
+    .reveal-up { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1); }
+    .reveal-up.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-up-slow { opacity: 0; transform: translateY(60px); transition: all 1.2s cubic-bezier(0.23, 1, 0.32, 1); }
+    .reveal-up-slow.in-view { opacity: 1; transform: translateY(0); }
+    .slide-in-left { opacity: 0; transform: translateX(-50px); transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1); }
+    .slide-in-left.in-view { opacity: 1; transform: translateX(0); }
+    .scale-fade-right { opacity: 0; transform: scale(0.8) translateX(50px); transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.8s ease; }
+    .scale-fade-right.in-view { opacity: 1; transform: scale(1) translateX(0); }
 
     /* Floating sphere glow */
     .landing-sphere-glow {
@@ -2613,9 +2862,13 @@
       text-shadow: 0 0 4px rgba(0,0,0,0.8);
     }
     .shap-bar.red {
-      background: rgba(220, 38, 38, 0.6);
-      border: 1px solid var(--accent-red);
-      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+      background: linear-gradient(90deg, rgba(220,38,38,0.85), rgba(248,113,113,0.7));
+      border: 1px solid rgba(220,38,38,0.5);
+    }
+    .shap-bar.green {
+      background: linear-gradient(90deg, rgba(34,197,94,0.85), rgba(74,222,128,0.7));
+      border: 1px solid rgba(34,197,94,0.5);
+      color: #fff;
     }
     .shap-footer {
       display: flex;
@@ -2659,40 +2912,130 @@
        PAGE 1: ANTI-GRAVITY GATEWAY (Landing Page)
        ================================================================ -->
   <div id="landingPage">
-    <!-- Minimal floating bubbles (low density) -->
-    <div class="particle-container">
-      <div class="floating-bubble" style="width:80px;height:80px;left:10%;opacity:0.15"></div>
-      <div class="floating-bubble" style="width:130px;height:130px;left:80%;opacity:0.08;animation-delay:5s"></div>
-      <div class="floating-bubble" style="width:60px;height:60px;left:45%;opacity:0.12;animation-delay:12s"></div>
-      <div class="floating-bubble" style="width:100px;height:100px;left:25%;opacity:0.1;animation-delay:18s"></div>
-    </div>
 
-    <!-- Floating sphere glow -->
-    <div class="landing-sphere-glow"></div>
-
-    <!-- Center content -->
-    <div class="landing-content">
-      <p class="landing-subtitle">Detection and Response</p>
-      <h1 class="landing-title">
-        BREACH <span class="accent">INTEL</span>
-      </h1>
-
-      <!-- Centered Verify Button -->
-      <div style="display:flex;justify-content:center">
-        <button class="verify-btn" id="verifyBtn" onclick="enterDashboard()">
-          <span class="btn-text">VERIFY YOUR EMAIL</span>
-          <div class="btn-bg"></div>
-          <span class="btn-alt">INITIATE SCAN</span>
-        </button>
+    <!-- ===== Section 1: Hero ===== -->
+    <section class="snap-section" id="hero-section">
+      <div class="particle-container">
+        <div class="floating-bubble" style="width:80px;height:80px;left:10%;opacity:0.15"></div>
+        <div class="floating-bubble" style="width:130px;height:130px;left:80%;opacity:0.08;animation-delay:5s"></div>
+        <div class="floating-bubble" style="width:60px;height:60px;left:45%;opacity:0.12;animation-delay:12s"></div>
+        <div class="floating-bubble" style="width:100px;height:100px;left:25%;opacity:0.1;animation-delay:18s"></div>
       </div>
-    </div>
+      <div class="landing-sphere-glow"></div>
+      <div class="landing-content">
+        <p class="landing-subtitle">Detection and Response</p>
+        <h1 class="landing-title">
+          BREACH <span class="accent">INTEL</span>
+        </h1>
+        <div style="display:flex;justify-content:center">
+          <button class="verify-btn" id="verifyBtn" onclick="enterDashboard()">
+            <span class="btn-text">VERIFY YOUR EMAIL</span>
+            <div class="btn-bg"></div>
+            <span class="btn-alt">INITIATE SCAN</span>
+          </button>
+        </div>
+      </div>
+      <div class="landing-footer">
+        <span>OFFENSIVE SECURITY</span>
+        <span>THREAT INTELLIGENCE</span>
+        <span>NIST COMPLIANCE</span>
+      </div>
+    </section>
 
-    <!-- Footer capabilities -->
-    <div class="landing-footer">
-      <span>OFFENSIVE SECURITY</span>
-      <span>THREAT INTELLIGENCE</span>
-      <span>NIST COMPLIANCE</span>
-    </div>
+    <!-- ===== Section 2: WHAT WE OFFER ===== -->
+    <section class="snap-section" id="offer-section">
+      <h2 class="snap-header">WHAT WE OFFER</h2>
+      <div class="offer-layout">
+        <div class="offer-card reveal-up reveal-delay-1 animate-on-scroll">
+          <div class="offer-num">01</div>
+          <div class="offer-title">IDENTITY PROTECTION</div>
+          <div class="offer-desc">Comprehensive real-time monitoring of PII across dark-web nodes, underground forums, and global datasets. Mitigates identity theft before threat actors can operationalize your personal data.</div>
+        </div>
+        <div class="offer-card reveal-up reveal-delay-2 animate-on-scroll">
+          <div class="offer-num">02</div>
+          <div class="offer-title">DATA BREACH EXPOSURE</div>
+          <div class="offer-desc">Machine-learning driven analysis of historical and active data dumps. Uncover exactly which datasets compromise your corporate environment, mapped continuously to active threat vectors.</div>
+        </div>
+        <div class="offer-card reveal-up reveal-delay-3 animate-on-scroll">
+          <div class="offer-num">03</div>
+          <div class="offer-title">CREDENTIAL AUDITING</div>
+          <div class="offer-desc">Deep-scanning for leaked passwords, pattern reuse, and hash matching against the world's largest known credential intelligence databases. Secures identities by enforcing pre-emptive resets.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 3: SECURITY SOLUTIONS ===== -->
+    <section class="snap-section" id="solutions-section">
+      <div class="solutions-split-layout">
+        <div class="solutions-left slide-in-left animate-on-scroll">
+          <div class="solutions-header">SECURITY SOLUTIONS</div>
+          <div class="solutions-subtext">Advanced defensive protocols for a digital-first world.</div>
+        </div>
+        <div class="solutions-right">
+          <div class="circle-wrap scale-fade-right reveal-delay-1 animate-on-scroll">
+            <div class="circle-hub">
+              <div class="circle-title">Threat Correlation</div>
+              <div class="circle-desc">Machine learning engines ingest millions of discrete dark-web nodes to map isolated threat actors directly back to organizational vulnerabilities in real-time.</div>
+            </div>
+          </div>
+          <div class="circle-wrap scale-fade-right reveal-delay-2 animate-on-scroll">
+            <div class="circle-hub">
+              <div class="circle-title">Automated Defense</div>
+              <div class="circle-desc">Direct API integration instantly isolates affected infrastructure perimeters, triggering autonomous remediation workflows and preventing lateral asset movement unconditionally.</div>
+            </div>
+          </div>
+          <div class="circle-wrap scale-fade-right reveal-delay-3 animate-on-scroll">
+            <div class="circle-hub">
+              <div class="circle-title">SHAP Explainability</div>
+              <div class="circle-desc">Black-box AI models unraveled. Every digital footprint risk score is completely visualized transparently so your security analysts understand the underlying variables instantly.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Section 4: CONTACT & SUPPORT ===== -->
+    <section class="snap-section" id="contact-section">
+      <svg class="floating-icon icon-mail" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="1"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+      <svg class="floating-icon icon-phone" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="1"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+
+      <div class="contact-container reveal-up-slow animate-on-scroll">
+        <h2 class="snap-header">CONTACT US TODAY</h2>
+        <div class="contact-grid-layout">
+          <div class="contact-grid-card">
+            <div class="contact-title">PRIMARY RESPONSE MODULE</div>
+            <div class="contact-info scanline-text">secureintel23@gmail.com</div>
+            <div class="contact-info scanline-text" style="font-size:20px">+91 986473****</div>
+            <div class="contact-sub" style="margin-top:15px">Encrypted dark-web routing protocols active. Standby for instantaneous tactical communication.</div>
+          </div>
+          <div class="contact-grid-card">
+            <div class="contact-title">GLOBAL HEADQUARTERS</div>
+            <div style="font-family:var(--font-display);font-size:20px;color:white;margin-bottom:10px">BREACH INTEL CORP.</div>
+            <div class="contact-sub">Block 4, Cyber-Hub Level 9<br>Outer Ring Road, Tech Park<br>Bangalore, KA 560103</div>
+          </div>
+          <div class="contact-grid-card">
+            <div class="contact-title">SERVICE LEVEL AGREEMENT</div>
+            <div class="contact-sub" style="margin-bottom:10px"><strong style="color:var(--neon-cyan)">24/7</strong> Technical Support for Enterprise Clients.</div>
+            <div class="contact-sub">Response Time: <span style="color:#ff3333;font-weight:bold">&lt; 2 Hours</span> for Critical Severity.</div>
+            <div class="contact-sub">Continuous active monitoring deployed.</div>
+          </div>
+          <div class="contact-grid-card">
+            <div class="contact-title">REGIONAL NODES & INTEL LINKS</div>
+            <ul class="contact-sub" style="padding-left:20px;margin-bottom:20px">
+              <li>North America (Command)</li>
+              <li>European Union (Compliance)</li>
+              <li>Asia-Pacific (Response)</li>
+            </ul>
+            <div style="display:flex;gap:20px">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <!-- ================================================================
@@ -2873,52 +3216,17 @@
               </div>
             </div>
             
-            <div class="shap-chart">
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">critical_norm</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 35%;">+35</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">recent_norm</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 30%;">+30</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">password_norm</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 25%;">+25</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">breach_count_norm</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 22%;">+22</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">severity_index</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 20%;">+20</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">dark_web_hits</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 18%;">+18</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">malware_combo</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 16%;">+16</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">identity_risk</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 15%;">+15</div></div>
-              </div>
-              <div class="shap-row">
-                <div class="shap-label highlight-cyan">Public Exposure Level</div>
-                <div class="shap-bar-container"><div class="shap-bar red" style="width: 14%;">+14</div></div>
-              </div>
+            <div class="shap-chart" id="shapDynamicChart">
+              <!-- Populated dynamically by renderSHAP() -->
             </div>
 
             <div class="shap-footer">
               <div class="shap-footer-item">
-                <div class="shap-number highlight-cyan">42</div>
+                <div class="shap-number highlight-cyan" id="shapBaseValue">—</div>
                 <div class="shap-footer-label highlight-cyan">BASE VALUE</div>
               </div>
               <div class="shap-footer-item right">
-                <div class="shap-number" style="color: var(--accent-red); text-shadow: 0 0 15px rgba(220, 38, 38, 0.6);">100</div>
+                <div class="shap-number" id="shapFinalScore" style="color: var(--accent-red); text-shadow: 0 0 15px rgba(220, 38, 38, 0.6);">—</div>
                 <div class="shap-footer-label highlight-cyan">FINAL SCORE</div>
               </div>
             </div>
@@ -3533,24 +3841,83 @@
       });
     }
 
-    function renderSHAP(shapFactors) {
-      const maxPts = shapFactors[0]?.pts || 1;
-      const container = document.getElementById('shapBars');
-      container.innerHTML = '';
-      shapFactors.forEach((s, i) => {
-        const pct = Math.min((s.pts / Math.max(maxPts, 1)) * 100, 100);
-        const item = document.createElement('div');
-        item.className = 'shap-item';
-        item.style.animationDelay = `${i * 0.08}s`;
-        item.innerHTML = `
-      <div class="shap-label">${s.label}</div>
-      <div class="shap-bar-track"><div class="shap-bar-fill" style="width:0%"></div></div>
-      <div class="shap-pts">+${s.pts} pts</div>
-    `;
-        container.appendChild(item);
+    function renderSHAP(shapFactors, finalScore) {
+      const chart = document.getElementById('shapDynamicChart');
+      const baseValueEl = document.getElementById('shapBaseValue');
+      const finalScoreEl = document.getElementById('shapFinalScore');
+
+      // Update footer
+      if (finalScoreEl) finalScoreEl.textContent = finalScore;
+
+      // Zero score = no exposure
+      if (!finalScore || finalScore === 0 || !shapFactors || shapFactors.length === 0) {
+        if (baseValueEl) baseValueEl.textContent = '0';
+        if (finalScoreEl) {
+          finalScoreEl.textContent = '0';
+          finalScoreEl.style.color = 'var(--accent-cyan)';
+          finalScoreEl.style.textShadow = '0 0 15px rgba(0,255,255,0.4)';
+        }
+        if (chart) {
+          chart.innerHTML = `
+            <div style="padding: 28px 0; text-align:center; color: var(--accent-cyan); font-family: var(--font-mono); font-size:13px; letter-spacing:0.1em; opacity:0.7;">
+              // NO EXPOSURE DETECTED — SHAP BREAKDOWN NOT APPLICABLE
+            </div>`;
+        }
+        return;
+      }
+
+      // Filter: only show factors with pts > 0; separate positive from negative
+      const positive = shapFactors.filter(s => (s.pts || 0) > 0);
+      const negative = shapFactors.filter(s => (s.pts || 0) < 0);
+      const toRender = [...positive, ...negative].slice(0, 10);
+
+      // Base value = finalScore minus sum of positive pts (clamped sensibly)
+      const sumPositive = positive.reduce((acc, s) => acc + (s.pts || 0), 0);
+      const baseValue = Math.max(Math.round(finalScore - sumPositive * 0.6), 1);
+      if (baseValueEl) baseValueEl.textContent = baseValue;
+
+      // Final score color based on risk
+      if (finalScoreEl) {
+        if (finalScore >= 75) {
+          finalScoreEl.style.color = 'var(--accent-red)';
+          finalScoreEl.style.textShadow = '0 0 15px rgba(220,38,38,0.6)';
+        } else if (finalScore >= 50) {
+          finalScoreEl.style.color = 'var(--accent-orange)';
+          finalScoreEl.style.textShadow = '0 0 15px rgba(249,115,22,0.5)';
+        } else if (finalScore >= 25) {
+          finalScoreEl.style.color = 'var(--accent-yellow)';
+          finalScoreEl.style.textShadow = '0 0 15px rgba(234,179,8,0.5)';
+        } else {
+          finalScoreEl.style.color = 'var(--accent-cyan)';
+          finalScoreEl.style.textShadow = '0 0 15px rgba(0,255,255,0.4)';
+        }
+      }
+
+      if (!chart) return;
+      chart.innerHTML = '';
+
+      const maxAbs = Math.max(...toRender.map(s => Math.abs(s.pts || 0)), 1);
+
+      toRender.forEach((s, i) => {
+        const pts = s.pts || 0;
+        const isPositive = pts >= 0;
+        const pct = Math.min((Math.abs(pts) / maxAbs) * 100, 100);
+        const barClass = isPositive ? 'shap-bar red' : 'shap-bar green';
+        const sign = isPositive ? '+' : '';
+        const row = document.createElement('div');
+        row.className = 'shap-row';
+        row.style.animationDelay = `${i * 0.06}s`;
+        row.innerHTML = `
+          <div class="shap-label highlight-cyan">${s.label}</div>
+          <div class="shap-bar-container">
+            <div class="${barClass}" style="width:0%; transition: width 0.5s ease ${i * 0.06}s;">${sign}${Math.abs(pts)}</div>
+          </div>`;
+        chart.appendChild(row);
+        // Animate bar in
         setTimeout(() => {
-          item.querySelector('.shap-bar-fill').style.width = pct + '%';
-        }, 100 + i * 60);
+          const bar = row.querySelector('.shap-bar');
+          if (bar) bar.style.width = pct + '%';
+        }, 80 + i * 60);
       });
     }
 
@@ -3768,6 +4135,7 @@
       renderGauge(mlResult.finalScore, mlResult.riskLevel);
       renderSignals(signals);
       renderFactors(mlResult.factors);
+      renderSHAP(mlResult.shapFactors, mlResult.finalScore);
       renderBreaches(exposures);
       renderJSON(rawData);
 
@@ -4148,6 +4516,31 @@
       // We keep pointer-events: none on the canvas but track via document
       canvas.style.pointerEvents = 'none';
 
+    })();
+
+    // ===== SCROLL ANIMATION — IntersectionObserver =====
+    (function() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      // Observe all animate-on-scroll elements
+      function initObserver() {
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+          observer.observe(el);
+        });
+      }
+
+      // Run on load, also re-run after landing is visible
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initObserver);
+      } else {
+        initObserver();
+      }
     })();
   </script>
 </body>
